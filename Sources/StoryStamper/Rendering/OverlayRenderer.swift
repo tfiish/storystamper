@@ -11,6 +11,12 @@ struct RenderedOverlay: @unchecked Sendable {
     let pixelSize: CGSize
 }
 
+/// A rendered block paired with its normalized center, ready for compositing.
+struct PlacedOverlay: Sendable {
+    let overlay: RenderedOverlay
+    let center: CGPoint
+}
+
 /// Renders the story text block with Core Graphics. The preview displays this
 /// exact image scaled down, and the exporter composites it at full resolution,
 /// so the two cannot drift apart.
@@ -119,20 +125,23 @@ enum OverlayRenderer {
 
     // MARK: - Export canvas
 
-    /// Composites the block onto a transparent canvas at full video size, ready
-    /// for FFmpeg to overlay at (0, 0) with no coordinate math on its side.
-    static func renderFullCanvas(block: RenderedOverlay, videoSize: CGSize, normalizedCenter: CGPoint) -> CGImage? {
+    /// Composites every block onto one transparent canvas at full video size,
+    /// ready for FFmpeg to overlay at (0, 0) with no coordinate math on its
+    /// side. Blocks draw in array order, so later blocks sit on top.
+    static func renderFullCanvas(overlays: [PlacedOverlay], videoSize: CGSize) -> CGImage? {
         guard let context = makeContext(size: videoSize) else { return nil }
-        let rect = blockRect(blockSize: block.pixelSize, videoSize: videoSize, normalizedCenter: normalizedCenter)
-        // Convert the top-left-origin rect into Core Graphics' bottom-left origin.
-        let cgRect = CGRect(
-            x: rect.minX,
-            y: videoSize.height - rect.maxY,
-            width: rect.width,
-            height: rect.height
-        )
         context.interpolationQuality = .high
-        context.draw(block.cgImage, in: cgRect)
+        for placed in overlays {
+            let rect = blockRect(blockSize: placed.overlay.pixelSize, videoSize: videoSize, normalizedCenter: placed.center)
+            // Convert the top-left-origin rect into Core Graphics' bottom-left origin.
+            let cgRect = CGRect(
+                x: rect.minX,
+                y: videoSize.height - rect.maxY,
+                width: rect.width,
+                height: rect.height
+            )
+            context.draw(placed.overlay.cgImage, in: cgRect)
+        }
         return context.makeImage()
     }
 

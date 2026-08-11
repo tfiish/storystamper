@@ -2,6 +2,11 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.1.0 — 2026-08-11
+
+- Support up to two text blocks, each with its own text, style, and position. The controls panel edits the selected block, a dashed ring marks the selection in the preview, and both blocks are burned into the export.
+- The smoke test now composites two differently styled blocks on every run.
+
 ## 1.0.0 — 2026-08-11
 
 Initial release.

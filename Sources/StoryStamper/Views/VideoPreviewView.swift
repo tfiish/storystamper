@@ -70,8 +70,10 @@ struct VideoPreviewView: View {
                         SafeAreaGuides(videoRect: videoRect)
                     }
 
-                    if let overlay = project.overlay {
-                        overlayView(overlay, video: video, videoRect: videoRect)
+                    ForEach(Array(project.blocks.enumerated()), id: \.element.id) { index, block in
+                        if let overlay = project.overlay(for: block) {
+                            overlayView(overlay, blockIndex: index, video: video, videoRect: videoRect)
+                        }
                     }
                 }
             }
@@ -94,35 +96,48 @@ struct VideoPreviewView: View {
         )
     }
 
-    private func overlayView(_ overlay: RenderedOverlay, video: VideoInfo, videoRect: CGRect) -> some View {
+    private func overlayView(_ overlay: RenderedOverlay, blockIndex: Int, video: VideoInfo, videoRect: CGRect) -> some View {
         let scale = videoRect.width / video.displaySize.width
         let displaySize = CGSize(width: overlay.pixelSize.width * scale, height: overlay.pixelSize.height * scale)
         let center = OverlayRenderer.clampedCenter(
-            project.overlayCenter,
+            project.blocks[blockIndex].center,
             blockSize: overlay.pixelSize,
             videoSize: video.displaySize
         )
+        // The selection ring only matters once a second block exists.
+        let isSelected = project.blocks.count > 1 && blockIndex == min(project.selectedIndex, project.blocks.count - 1)
 
         return Image(decorative: overlay.cgImage, scale: 1)
             .resizable()
             .interpolation(.high)
             .frame(width: displaySize.width, height: displaySize.height)
+            .overlay {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: 6)
+                        .strokeBorder(Color.accentColor.opacity(0.8), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                        .padding(-4)
+                }
+            }
             .position(
                 x: videoRect.minX + center.x * videoRect.width,
                 y: videoRect.minY + center.y * videoRect.height
             )
+            .onTapGesture {
+                project.selectedIndex = blockIndex
+            }
             .gesture(
                 DragGesture()
                     .onChanged { value in
                         if dragStartCenter == nil {
                             dragStartCenter = center
+                            project.selectedIndex = blockIndex
                         }
                         guard let start = dragStartCenter else { return }
                         let proposed = CGPoint(
                             x: start.x + value.translation.width / videoRect.width,
                             y: start.y + value.translation.height / videoRect.height
                         )
-                        project.overlayCenter = OverlayRenderer.clampedCenter(
+                        project.blocks[blockIndex].center = OverlayRenderer.clampedCenter(
                             proposed,
                             blockSize: overlay.pixelSize,
                             videoSize: video.displaySize

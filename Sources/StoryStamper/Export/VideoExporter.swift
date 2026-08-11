@@ -6,8 +6,7 @@ import Foundation
 enum VideoExporter {
     static func export(
         videoInfo: VideoInfo,
-        block: RenderedOverlay,
-        normalizedCenter: CGPoint,
+        overlays: [PlacedOverlay],
         outputURL: URL,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws {
@@ -19,9 +18,8 @@ enum VideoExporter {
         }
 
         guard let canvas = OverlayRenderer.renderFullCanvas(
-            block: block,
-            videoSize: videoInfo.displaySize,
-            normalizedCenter: normalizedCenter
+            overlays: overlays,
+            videoSize: videoInfo.displaySize
         ) else {
             throw ExportError.overlayRenderFailed
         }

@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A color stored as sRGB components so it can round-trip through Codable,
 /// SwiftUI's ColorPicker, and Core Graphics without drift.
-struct RGBAColor: Codable, Equatable, Sendable {
+struct RGBAColor: Codable, Hashable, Sendable {
     var red: Double
     var green: Double
     var blue: Double
@@ -111,7 +111,7 @@ enum BackgroundMode: String, Codable, CaseIterable, Identifiable, Sendable {
 
 /// Every presentation setting for the text overlay. Font size and padding are
 /// expressed in source-video pixels so the exported result is resolution-exact.
-struct OverlayStyle: Codable, Equatable, Sendable {
+struct OverlayStyle: Codable, Hashable, Sendable {
     var font: FontChoice = .bold
     var fontSize: Double = 72
     var alignment: TextAlignmentChoice = .center

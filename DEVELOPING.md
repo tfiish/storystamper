@@ -42,7 +42,7 @@ Sources/StoryStamper/
 ├── SmokeTest.swift              Headless end-to-end export
 ├── Models/
 │   ├── StoryProject.swift       @Observable source of truth: video, playback,
-│   │                            text, style, placement, and export lifecycle
+│   │                            text blocks (up to two), selection, and export
 │   ├── OverlayStyle.swift       Codable style settings + font/color/alignment enums
 │   ├── VideoInfo.swift          One-shot AVFoundation probe (rotation-aware size)
 │   └── SettingsStore.swift      UserDefaults persistence for style settings
@@ -61,8 +61,9 @@ Sources/StoryStamper/
 
 ## Invariants worth preserving
 
-- **Preview and export share pixels and math.** `OverlayRenderer.renderBlock` produces the one bitmap both display and export use; `clampedCenter` and `blockRect` are the only placement math. Change placement behavior in one place and both stay in sync.
-- **Overlay position is normalized.** `StoryProject.overlayCenter` is in 0...1 video coordinates. Never store window-pixel positions.
+- **Preview and export share pixels and math.** `OverlayRenderer.renderBlock` produces the one bitmap per block that both display and export use; `clampedCenter` and `blockRect` are the only placement math. Change placement behavior in one place and both stay in sync.
+- **Overlay positions are normalized.** Each `OverlayBlock.center` is in 0...1 video coordinates. Never store window-pixel positions.
+- **Blocks are capped at two** (`StoryProject.maxBlocks`), and re-rendering is signature-cached per block—dragging never re-rasterizes text, only text, style, or video changes do.
 - **User text never touches a shell or a filter string.** FFmpeg receives an argument array via `Process`, and the text itself only exists rasterized inside a PNG. Keep it that way when touching export code.
 - **Rotation:** FFmpeg auto-rotates input before the filter graph, and the `sidedata=mode=delete:type=DISPLAYMATRIX` filter strips the stale rotation side data FFmpeg 7 would otherwise copy into the output. Removing that filter reintroduces a double-rotation bug on phone footage.
 - **Font size and padding are in source-video pixels**, so identical settings produce identical exports regardless of window size.

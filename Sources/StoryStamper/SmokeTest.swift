@@ -22,16 +22,25 @@ enum SmokeTest {
                 let info = try await VideoInfo.probe(url: inputURL)
                 print("probe: \(Int(info.displaySize.width))x\(Int(info.displaySize.height)), \(String(format: "%.2f", info.duration))s, \(info.nominalFrameRate) fps, audio: \(info.hasAudio)")
 
-                guard let block = OverlayRenderer.renderBlock(text: text, style: OverlayStyle(), videoSize: info.displaySize) else {
+                guard let mainBlock = OverlayRenderer.renderBlock(text: text, style: OverlayStyle(), videoSize: info.displaySize) else {
                     fputs("SMOKE FAIL: overlay render returned nil\n", stderr)
                     exit(1)
                 }
-                print("overlay block: \(Int(block.pixelSize.width))x\(Int(block.pixelSize.height)) px")
+                print("overlay block: \(Int(mainBlock.pixelSize.width))x\(Int(mainBlock.pixelSize.height)) px")
+
+                // A second, differently styled block exercises multi-block
+                // compositing on every smoke run.
+                var secondStyle = OverlayStyle()
+                secondStyle.fontSize = 44
+                secondStyle.backgroundMode = .none
+                var overlays = [PlacedOverlay(overlay: mainBlock, center: CGPoint(x: 0.5, y: 0.72))]
+                if let second = OverlayRenderer.renderBlock(text: "Second block ✓", style: secondStyle, videoSize: info.displaySize) {
+                    overlays.append(PlacedOverlay(overlay: second, center: CGPoint(x: 0.5, y: 0.18)))
+                }
 
                 try await VideoExporter.export(
                     videoInfo: info,
-                    block: block,
-                    normalizedCenter: CGPoint(x: 0.5, y: 0.72),
+                    overlays: overlays,
                     outputURL: outputURL
                 ) { progress in
                     print(String(format: "progress: %3.0f%%", progress * 100))

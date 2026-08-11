@@ -56,16 +56,36 @@ struct OverlayEditorView: View {
 
     private var textSection: some View {
         Section("Story Text") {
-            TextEditor(text: $project.storyText)
+            if project.blocks.count > 1 {
+                Picker("Block", selection: $project.selectedIndex) {
+                    ForEach(0..<project.blocks.count, id: \.self) { index in
+                        Text("Block \(index + 1)").tag(index)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            TextEditor(text: $project.selectedBlock.text)
                 .font(.body)
                 .frame(minHeight: 72)
                 .scrollContentBackground(.hidden)
+
+            if project.canAddBlock {
+                Button("Add Second Block") {
+                    project.addBlock()
+                }
+            } else {
+                Button("Remove This Block", role: .destructive) {
+                    project.removeSelectedBlock()
+                }
+            }
         }
     }
 
     private var styleSection: some View {
         Section("Text Style") {
-            Picker("Font", selection: $project.style.font) {
+            Picker("Font", selection: $project.selectedBlock.style.font) {
                 ForEach(FontChoice.allCases) { choice in
                     Text(choice.displayName).tag(choice)
                 }
@@ -73,14 +93,14 @@ struct OverlayEditorView: View {
 
             LabeledContent("Size") {
                 HStack(spacing: 8) {
-                    Slider(value: $project.style.fontSize, in: 24...160)
-                    Text("\(Int(project.style.fontSize))")
+                    Slider(value: $project.selectedBlock.style.fontSize, in: 24...160)
+                    Text("\(Int(project.selectedBlock.style.fontSize))")
                         .font(.caption.monospacedDigit())
                         .frame(width: 28, alignment: .trailing)
                 }
             }
 
-            Picker("Alignment", selection: $project.style.alignment) {
+            Picker("Alignment", selection: $project.selectedBlock.style.alignment) {
                 ForEach(TextAlignmentChoice.allCases) { choice in
                     Image(systemName: choice.symbolName).tag(choice)
                 }
@@ -97,25 +117,25 @@ struct OverlayEditorView: View {
 
     private var backgroundSection: some View {
         Section("Background") {
-            Picker("Style", selection: $project.style.backgroundMode) {
+            Picker("Style", selection: $project.selectedBlock.style.backgroundMode) {
                 ForEach(BackgroundMode.allCases) { mode in
                     Text(mode.displayName).tag(mode)
                 }
             }
             .pickerStyle(.segmented)
 
-            if project.style.backgroundMode != .none {
+            if project.selectedBlock.style.backgroundMode != .none {
                 ColorPicker(
                     "Color",
                     selection: colorBinding(\.backgroundColor),
                     supportsOpacity: false
                 )
 
-                if project.style.backgroundMode == .semiTransparent {
+                if project.selectedBlock.style.backgroundMode == .semiTransparent {
                     LabeledContent("Opacity") {
                         HStack(spacing: 8) {
-                            Slider(value: $project.style.backgroundOpacity, in: 0.1...0.9)
-                            Text("\(Int(project.style.backgroundOpacity * 100))%")
+                            Slider(value: $project.selectedBlock.style.backgroundOpacity, in: 0.1...0.9)
+                            Text("\(Int(project.selectedBlock.style.backgroundOpacity * 100))%")
                                 .font(.caption.monospacedDigit())
                                 .frame(width: 32, alignment: .trailing)
                         }
@@ -124,8 +144,8 @@ struct OverlayEditorView: View {
 
                 LabeledContent("Padding") {
                     HStack(spacing: 8) {
-                        Slider(value: $project.style.padding, in: 0...64)
-                        Text("\(Int(project.style.padding))")
+                        Slider(value: $project.selectedBlock.style.padding, in: 0...64)
+                        Text("\(Int(project.selectedBlock.style.padding))")
                             .font(.caption.monospacedDigit())
                             .frame(width: 28, alignment: .trailing)
                     }
@@ -144,7 +164,7 @@ struct OverlayEditorView: View {
             .frame(maxWidth: .infinity)
             .disabled(project.video == nil)
 
-            Text("Drag the text on the preview to fine-tune.")
+            Text("Drag a text block on the preview to fine-tune. Position buttons move the selected block.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -173,7 +193,7 @@ struct OverlayEditorView: View {
 
             if project.video == nil {
                 footerHint("Load a video to export.")
-            } else if project.overlay == nil {
+            } else if project.placedOverlays.isEmpty {
                 footerHint("Enter story text to export.")
             }
         }
@@ -187,11 +207,12 @@ struct OverlayEditorView: View {
             .foregroundStyle(.secondary)
     }
 
-    /// Bridges an RGBAColor property to the Color value ColorPicker expects.
+    /// Bridges an RGBAColor property of the selected block's style to the
+    /// Color value ColorPicker expects.
     private func colorBinding(_ keyPath: WritableKeyPath<OverlayStyle, RGBAColor>) -> Binding<Color> {
         Binding(
-            get: { project.style[keyPath: keyPath].color },
-            set: { project.style[keyPath: keyPath] = RGBAColor(color: $0) }
+            get: { project.selectedBlock.style[keyPath: keyPath].color },
+            set: { project.selectedBlock.style[keyPath: keyPath] = RGBAColor(color: $0) }
         )
     }
 }
