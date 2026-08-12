@@ -5,12 +5,12 @@ struct AboutView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
+        VStack(alignment: .leading, spacing: Spacing.large) {
+            HStack(spacing: Spacing.medium) {
                 Image(systemName: "text.below.photo")
-                    .font(.system(size: 26))
+                    .font(.system(size: IconSize.large))
                     .foregroundStyle(.tint)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Spacing.hair) {
                     Text(AppInfo.displayName)
                         .font(.appTitle)
                     Text("Version \(AppInfo.version)")
@@ -28,7 +28,7 @@ struct AboutView: View {
             Text("Everything runs locally on your Mac. Nothing is uploaded, no account is needed, and the original video is never modified.")
 
             if let url = AppInfo.repositoryURL {
-                HStack(spacing: 4) {
+                HStack(spacing: Spacing.tight) {
                     Text("Full details are in the README:")
                     Link("github.com/tfiish/storystamper", destination: url)
                 }
@@ -40,10 +40,10 @@ struct AboutView: View {
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
-            .padding(.top, 2)
+            .padding(.top, Spacing.hair)
         }
         .font(.appRegular)
-        .padding(24)
-        .frame(width: 420)
+        .padding(Spacing.xLarge)
+        .frame(width: Metrics.aboutWidth)
     }
 }

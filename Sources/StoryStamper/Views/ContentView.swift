@@ -19,11 +19,11 @@ struct ContentView: View {
             SourceSidebarView(project: project)
             Divider()
             VideoPreviewView(project: project)
-                .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+                .frame(minWidth: Metrics.minPreviewWidth, maxWidth: .infinity, maxHeight: .infinity)
             Divider()
             StyleSidebarView(project: project)
         }
-        .frame(minWidth: 1000, minHeight: 640)
+        .frame(minWidth: Metrics.minWindowWidth, minHeight: Metrics.minWindowHeight)
         .sheet(isPresented: exportSheetVisible) {
             ExportStatusView(project: project)
                 .interactiveDismissDisabled(isExporting)

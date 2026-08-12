@@ -106,8 +106,10 @@ final class StoryProject {
         renderCache[block.id]?.overlay
     }
 
+    /// Text blocks only make sense against a loaded video, since placement is
+    /// relative to its frame.
     var canAddBlock: Bool {
-        blocks.count < Self.maxBlocks
+        video != nil && blocks.count < Self.maxBlocks
     }
 
     /// Adds a block inheriting the current block's style, dropped into

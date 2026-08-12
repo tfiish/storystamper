@@ -5,6 +5,10 @@ import SwiftUI
 struct StyleSidebarView: View {
     @Bindable var project: StoryProject
 
+    /// Roughly what Instagram puts around Story text, in the same 1080-wide
+    /// reference units the padding slider uses.
+    private static let instagramPadding: Double = 20
+
     var body: some View {
         VStack(spacing: 0) {
             Form {
@@ -16,7 +20,7 @@ struct StyleSidebarView: View {
 
             exportFooter
         }
-        .frame(width: 300)
+        .frame(width: Metrics.sidebarWidth)
     }
 
     private var textSection: some View {
@@ -33,15 +37,15 @@ struct StyleSidebarView: View {
 
             TextEditor(text: $project.selectedBlock.text)
                 .font(.appRegular)
-                .frame(minHeight: 100)
+                .frame(minHeight: Metrics.textEditorMinHeight)
                 .scrollContentBackground(.hidden)
 
             HStack {
-                if project.canAddBlock {
-                    Button("Add Text Block") {
-                        project.addBlock()
-                    }
+                Button("Add Text Block") {
+                    project.addBlock()
                 }
+                .disabled(!project.canAddBlock)
+
                 if project.blocks.count > 1 {
                     Button("Remove", role: .destructive) {
                         project.removeSelectedBlock()
@@ -64,11 +68,11 @@ struct StyleSidebarView: View {
             }
 
             LabeledContent("Size") {
-                HStack(spacing: 8) {
+                HStack(spacing: Spacing.small) {
                     Slider(value: $project.selectedBlock.style.fontSize, in: 24...160)
                     Text("\(Int(project.selectedBlock.style.fontSize))")
                         .font(.appSmallDigits)
-                        .frame(width: 28, alignment: .trailing)
+                        .frame(width: Metrics.readoutWidth, alignment: .trailing)
                 }
             }
 
@@ -97,28 +101,44 @@ struct StyleSidebarView: View {
                 }
 
                 LabeledContent("Opacity") {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Spacing.small) {
                         // 100% produces what used to be the "Solid" mode.
                         Slider(value: $project.selectedBlock.style.backgroundOpacity, in: 0.1...1)
                         Text("\(Int(project.selectedBlock.style.backgroundOpacity * 100))%")
                             .font(.appSmallDigits)
-                            .frame(width: 32, alignment: .trailing)
+                            .frame(width: Metrics.readoutWidth, alignment: .trailing)
                     }
                 }
 
                 LabeledContent("Padding") {
-                    HStack(spacing: 8) {
+                    HStack(spacing: Spacing.small) {
                         Slider(value: $project.selectedBlock.style.padding, in: 0...64)
                         Text("\(Int(project.selectedBlock.style.padding))")
                             .font(.appSmallDigits)
-                            .frame(width: 28, alignment: .trailing)
+                            .frame(width: Metrics.readoutWidth, alignment: .trailing)
                     }
                 }
+
+                HStack(spacing: 0) {
+                    Text("Instagram native padding is approximately ")
+                    Button {
+                        project.selectedBlock.style.padding = Self.instagramPadding
+                    } label: {
+                        Text("\(Int(Self.instagramPadding))")
+                            .underline()
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.tint)
+                    .help("Set padding to \(Int(Self.instagramPadding))")
+                    Text(".")
+                }
+                .font(.appSmall)
+                .foregroundStyle(.secondary)
             }
             .disabled(!enabled)
         } header: {
             // Label first, checkbox after it.
-            HStack(spacing: 6) {
+            HStack(spacing: Spacing.small) {
                 Text("Text Background")
                 Toggle("", isOn: $project.selectedBlock.style.backgroundEnabled)
                     .toggleStyle(.checkbox)
@@ -129,7 +149,7 @@ struct StyleSidebarView: View {
     }
 
     private var exportFooter: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: Spacing.small) {
             Button {
                 project.beginExport()
             } label: {
@@ -146,7 +166,7 @@ struct StyleSidebarView: View {
                 footerHint("Enter story text to export.")
             }
         }
-        .padding(12)
+        .padding(Spacing.medium)
         .background(.bar)
     }
 
@@ -171,19 +191,19 @@ private struct ColorRow: View {
     @Binding var selection: RGBAColor
 
     var body: some View {
-        HStack(spacing: 7) {
+        HStack(spacing: Spacing.small) {
             ForEach(presets, id: \.name) { preset in
                 Button {
                     selection = preset.color
                 } label: {
                     Circle()
                         .fill(preset.color.color)
-                        .frame(width: 17, height: 17)
-                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.3), lineWidth: 0.5))
+                        .frame(width: Metrics.swatch, height: Metrics.swatch)
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.3), lineWidth: BorderWidth.hairline))
                         .overlay {
                             Circle()
-                                .strokeBorder(Color.accentColor, lineWidth: 2)
-                                .padding(-3)
+                                .strokeBorder(Color.accentColor, lineWidth: BorderWidth.emphasis)
+                                .padding(-Spacing.tight)
                                 .opacity(selection.matches(preset.color) ? 1 : 0)
                         }
                 }

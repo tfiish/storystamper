@@ -29,9 +29,9 @@ struct VideoPreviewView: View {
             }
             .overlay {
                 if isDropTargeted {
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(Color.accentColor, lineWidth: 3)
-                        .padding(6)
+                    RoundedRectangle(cornerRadius: Radius.medium)
+                        .strokeBorder(Color.accentColor, lineWidth: BorderWidth.strong)
+                        .padding(Spacing.small)
                 }
             }
 
@@ -44,9 +44,9 @@ struct VideoPreviewView: View {
     // MARK: - Empty state
 
     private var dropPrompt: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: Spacing.large) {
             Image(systemName: "film.stack")
-                .font(.system(size: 44, weight: .light))
+                .font(.system(size: IconSize.emptyState, weight: .light))
                 .foregroundStyle(.secondary)
             Text("Drag a video here")
                 .font(.appTitle)
@@ -92,7 +92,7 @@ struct VideoPreviewView: View {
                 }
             }
         }
-        .padding(12)
+        .padding(Spacing.medium)
     }
 
     /// Aspect-fit rect for the video inside the available space; every overlay
@@ -115,11 +115,11 @@ struct VideoPreviewView: View {
             project.clearVideo()
         } label: {
             Image(systemName: "xmark")
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: IconSize.small, weight: .bold))
                 .foregroundStyle(.white)
-                .frame(width: 24, height: 24)
+                .frame(width: Metrics.overlayButton, height: Metrics.overlayButton)
                 .background(Circle().fill(Color.black.opacity(0.55)))
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.25), lineWidth: 1))
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.25), lineWidth: BorderWidth.hairline))
         }
         .buttonStyle(.plain)
         .help("Close this video and choose another")
@@ -143,9 +143,9 @@ struct VideoPreviewView: View {
             .frame(width: displaySize.width, height: displaySize.height)
             .overlay {
                 if isSelected {
-                    RoundedRectangle(cornerRadius: 6)
-                        .strokeBorder(Color.accentColor.opacity(0.8), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                        .padding(-4)
+                    RoundedRectangle(cornerRadius: Radius.small)
+                        .strokeBorder(Color.accentColor.opacity(0.8), style: StrokeStyle(lineWidth: BorderWidth.emphasis, dash: [5, 4]))
+                        .padding(-Spacing.tight)
                 }
             }
             .position(
@@ -242,11 +242,11 @@ private struct CenterGuides: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             if showVertical {
-                line(width: 1, height: videoRect.height)
+                line(width: BorderWidth.hairline, height: videoRect.height)
                     .offset(x: videoRect.midX, y: videoRect.minY)
             }
             if showHorizontal {
-                line(width: videoRect.width, height: 1)
+                line(width: videoRect.width, height: BorderWidth.hairline)
                     .offset(x: videoRect.minX, y: videoRect.midY)
             }
         }
@@ -259,7 +259,7 @@ private struct CenterGuides: View {
         Rectangle()
             .fill(Color.accentColor)
             .frame(width: width, height: height)
-            .shadow(color: .black.opacity(0.5), radius: 1)
+            .shadow(color: .black.opacity(0.5), radius: BorderWidth.hairline)
     }
 }
 
@@ -286,7 +286,7 @@ private struct SafeAreaGuides: View {
             .overlay(alignment: edge == .top ? .bottom : .top) {
                 Rectangle()
                     .fill(Color.white.opacity(0.5))
-                    .frame(height: 1)
+                    .frame(height: BorderWidth.hairline)
             }
             .frame(width: videoRect.width, height: height)
     }
@@ -299,13 +299,13 @@ private struct TransportBar: View {
     @State private var wasPlayingBeforeScrub = false
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: Spacing.medium) {
             Button {
                 project.togglePlayback()
             } label: {
                 Image(systemName: project.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: 15))
-                    .frame(width: 22)
+                    .font(.system(size: IconSize.medium))
+                    .frame(width: Metrics.overlayButton)
             }
             .buttonStyle(.plain)
             .keyboardShortcut(.space, modifiers: [])
@@ -333,8 +333,8 @@ private struct TransportBar: View {
                 .font(.appSmallDigits)
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
+        .padding(.horizontal, Spacing.large)
+        .padding(.vertical, Spacing.medium)
         .background(.bar)
     }
 

@@ -9,7 +9,7 @@ struct ExportStatusView: View {
     private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: Spacing.large) {
             switch project.exportPhase {
             case .idle:
                 EmptyView()
@@ -20,7 +20,7 @@ struct ExportStatusView: View {
 
                 ProgressView(value: progress)
                     .progressViewStyle(.linear)
-                    .frame(width: 280)
+                    .frame(width: Metrics.progressWidth)
                     // FFmpeg reports about twice a second; interpolating
                     // between updates keeps the bar from stepping.
                     .animation(.linear(duration: 0.6), value: progress)
@@ -35,11 +35,11 @@ struct ExportStatusView: View {
 
             case .completed:
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 36))
+                    .font(.system(size: IconSize.status))
                     .foregroundStyle(.green)
                 Text("Export complete")
                     .font(.appRegularBold)
-                HStack(spacing: 12) {
+                HStack(spacing: Spacing.medium) {
                     Button("Reveal in Finder") {
                         project.revealExportInFinder()
                     }
@@ -51,7 +51,7 @@ struct ExportStatusView: View {
 
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 32))
+                    .font(.system(size: IconSize.status))
                     .foregroundStyle(.orange)
                 Text("Export failed")
                     .font(.appRegularBold)
@@ -59,7 +59,7 @@ struct ExportStatusView: View {
                     .font(.appRegular)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: 320)
+                    .frame(maxWidth: Metrics.progressWidth)
                     .textSelection(.enabled)
                 Button("Close") {
                     project.finishExport()
@@ -67,8 +67,8 @@ struct ExportStatusView: View {
                 .keyboardShortcut(.defaultAction)
             }
         }
-        .padding(28)
-        .frame(minWidth: 340)
+        .padding(Spacing.xLarge)
+        .frame(minWidth: Metrics.sheetMinWidth)
         .onReceive(clock) { now = $0 }
     }
 

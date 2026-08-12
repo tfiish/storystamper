@@ -2,6 +2,15 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.5.0 — 2026-08-12
+
+- Story Text moved to the top of the right column; the left column now holds the video, preview guides, and About.
+- Removed the Top, Center, and Bottom position buttons, since dragging covers positioning.
+- The Text Background checkbox now follows its label.
+- Padding gained a hint that Instagram's native padding is roughly 20, with the number clickable to jump straight there.
+- Adding a text block now requires a loaded video.
+- Standardized the interface on a single design system: five text sizes (8, 10, 13, 16, and 21), a four-point spacing grid, and named tokens for radii, borders, icons, and component sizes.
+
 ## 1.4.0 — 2026-08-12
 
 - Up to three text blocks instead of two.

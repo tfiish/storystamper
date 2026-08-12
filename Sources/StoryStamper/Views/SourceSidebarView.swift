@@ -16,14 +16,14 @@ struct SourceSidebarView: View {
 
             footer
         }
-        .frame(width: 300)
+        .frame(width: Metrics.sidebarWidth)
         .sheet(isPresented: $showingAbout) {
             AboutView()
         }
     }
 
     private var footer: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: Spacing.medium) {
             Button("About") { showingAbout = true }
                 .controlSize(.small)
             Text("\(AppInfo.displayName) v\(AppInfo.version)")
@@ -31,8 +31,8 @@ struct SourceSidebarView: View {
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.top, 6)
-        .padding(.bottom, 10)
+        .padding(.top, Spacing.small)
+        .padding(.bottom, Spacing.medium)
     }
 
     private var videoSection: some View {
