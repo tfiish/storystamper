@@ -2,6 +2,10 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 2.1.1 — 2026-08-12
+
+- **Double-click a text block on the preview to edit its text.** It selects that block and puts the caret in the Story Text field, so the block you just pointed at is the one you start typing into. A single click still just selects. VoiceOver reaches the same thing as an Edit Text action on the block.
+
 ## 2.1.0 — 2026-08-12
 
 - **The "Instagram native padding: 20" line under the padding slider is gone.** Nothing ever measured Instagram to get that number, so the app should not have said it did. Twenty is a good place to start, which is all it ever was.

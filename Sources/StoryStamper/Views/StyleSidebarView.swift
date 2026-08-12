@@ -35,6 +35,11 @@ struct StyleSidebarView: View {
         .onChange(of: textEditorFocused) { _, focused in
             project.isEditingText = focused
         }
+        // Double-clicking a block on the preview selects it and lands here,
+        // so the caret arrives in the field that holds that block's text.
+        .onChange(of: project.textFocusRequests) { _, _ in
+            textEditorFocused = true
+        }
     }
 
     private var textSection: some View {

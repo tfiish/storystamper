@@ -169,6 +169,11 @@ struct VideoPreviewView: View {
                 x: videoRect.minX + center.x * videoRect.width,
                 y: videoRect.minY + center.y * videoRect.height
             )
+            // Declared before the single tap, which is what lets a double
+            // click reach this rather than being consumed as two selections.
+            .onTapGesture(count: 2) {
+                project.beginEditingText(blockIndex: blockIndex)
+            }
             .onTapGesture {
                 select(blockIndex)
             }
@@ -211,6 +216,10 @@ struct VideoPreviewView: View {
             .accessibilityLabel("Block \(blockIndex + 1)")
             .accessibilityValue(project.blocks[blockIndex].text)
             .accessibilityAddTraits(isTarget ? [.isSelected] : [])
+            // The double click, in the form a keyboard reaches it by.
+            .accessibilityAction(named: "Edit Text") {
+                project.beginEditingText(blockIndex: blockIndex)
+            }
     }
 
     /// Selecting a block also takes keyboard focus, so the arrow keys act on

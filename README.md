@@ -51,7 +51,7 @@ Because you compiled it yourself, macOS raises no Gatekeeper warning. (A `.app` 
 1. Browse for your MP4, MOV, or M4V—or drag it into the window.
 2. Type your desired text in up to three independently styled text blocks. The video overlay updates live, preserving your line breaks and wrapping long lines automatically.
 3. Adjust font, size, alignment, color, background, and padding for each text block.
-4. Drag any text block where you want it on the preview, or select it and use the arrow keys (Shift + arrow moves it in larger steps). Dragging near the horizontal or vertical midline snaps to the guideline that appears.
+4. Drag any text block where you want it on the preview, or select it and use the arrow keys (Shift + arrow moves it in larger steps). Dragging near the horizontal or vertical midline snaps to the guideline that appears. Double-click a block to jump straight back into its text.
 5. Click Clear Video in the left panel to start over. The story text will clear along with the video, but your styling will carry over to the next clip. It does **not** ask first—but Command-Z puts the video and the text back (as it does for adding or removing a block, restyling one, and moving one).
 6. Click Export Video, choose a destination, and wait for the progress bar. Even a large (100+ MB) video file should process in under 30 seconds. The default filename appends `-story` so the source video is never overwritten. Nothing is written to that destination until the encode finishes, so a canceled or failed export leaves no half-written file behind. By default, exports are sized to a 1080-wide Story frame but you can export at the original resolution from the Settings menu.
 

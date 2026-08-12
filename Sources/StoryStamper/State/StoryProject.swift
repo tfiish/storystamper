@@ -42,6 +42,12 @@ final class StoryProject {
     /// bar can give up the space bar rather than swallow it mid-sentence.
     var isEditingText = false
 
+    /// Bumped whenever something outside the style sidebar asks for the story
+    /// text field—today that is double-clicking a block on the preview. A
+    /// count rather than a flag, because the second ask has to register even
+    /// though the field is already focused from the first.
+    private(set) var textFocusRequests = 0
+
     var showSafeArea = SettingsStore.loadShowSafeArea() {
         didSet { SettingsStore.save(showSafeArea: showSafeArea) }
     }
@@ -271,6 +277,14 @@ final class StoryProject {
     var selectedBlock: OverlayBlock {
         get { blocks[safeSelectedIndex] }
         set { blocks[safeSelectedIndex] = newValue }
+    }
+
+    /// Selects a block and asks for the caret in the field that holds its
+    /// text. Double-clicking anything editable opens it for editing, and the
+    /// text on the preview is the most editable thing in the window.
+    func beginEditingText(blockIndex: Int) {
+        selectedIndex = min(max(blockIndex, 0), blocks.count - 1)
+        textFocusRequests += 1
     }
 
     func overlay(for block: OverlayBlock) -> RenderedOverlay? {
