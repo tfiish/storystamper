@@ -12,17 +12,20 @@ struct StoryCommands: Commands {
         // The app menu's About opened the system panel while the sidebar
         // opened ours; now both open the same sheet.
         CommandGroup(replacing: .appInfo) {
-            Button("About Story Stamper") { project.infoSheet = .about }
+            Button("About \(AppInfo.displayName)") { project.infoSheet = .about }
         }
 
         CommandGroup(replacing: .appSettings) {
-            Button("Settings") { project.infoSheet = .settings }
+            Button("Settings…") { project.infoSheet = .settings }
                 .keyboardShortcut(",", modifiers: .command)
         }
 
-        // A one-window utility has no New, so Open takes its place.
+        // A one-window utility has no New, so Open takes its place. The
+        // trailing ellipsis is not decoration: every command here opens a
+        // panel before it does anything, and that is what the character
+        // promises on this platform.
         CommandGroup(replacing: .newItem) {
-            Button(project.video == nil ? "Open Video" : "Replace Video") {
+            Button(project.video == nil ? "Open Video…" : "Replace Video…") {
                 project.chooseVideo()
             }
             .keyboardShortcut("o", modifiers: .command)
@@ -30,7 +33,7 @@ struct StoryCommands: Commands {
 
         CommandGroup(after: .newItem) {
             Divider()
-            Button("Export Video") { project.beginExport() }
+            Button("Export Video…") { project.beginExport() }
                 .keyboardShortcut("e", modifiers: .command)
                 .disabled(!project.canExport)
         }
@@ -82,7 +85,7 @@ struct StoryCommands: Commands {
 
         CommandGroup(replacing: .help) {
             if let url = AppInfo.repositoryURL {
-                Button("Story Stamper Help") { NSWorkspace.shared.open(url) }
+                Button("\(AppInfo.displayName) Help") { NSWorkspace.shared.open(url) }
             }
         }
     }

@@ -58,7 +58,7 @@ struct StyleSidebarView: View {
                 }
                 .disabled(!project.canAddBlock)
 
-                Button("Remove", role: .destructive) {
+                Button("Remove Text Block", role: .destructive) {
                     project.requestRemoveSelectedBlock()
                 }
                 .disabled(project.blocks.count < 2)
@@ -106,7 +106,7 @@ struct StyleSidebarView: View {
                 ColorRow(presets: ColorPreset.text, selection: styleBinding(\.textColor))
             }
 
-            Text("Style changes apply only to the selected Text Block.")
+            Text("Style changes apply only to the selected text block.")
                 .font(.appSmall)
                 .foregroundStyle(.secondary)
         }
@@ -132,7 +132,7 @@ struct StyleSidebarView: View {
                     // The slider stops at 10% so "enabled" always means
                     // visible; removing the box entirely is the checkbox's
                     // job, and nothing else says so.
-                    help: "Ranges from 10% to 100%. Uncheck Text Background to remove the box entirely."
+                    hint: "Ranges from 10% to 100%. Uncheck Text Background to remove the box entirely."
                 )
 
                 SliderRow(
@@ -194,7 +194,9 @@ struct StyleSidebarView: View {
                 .disabled(!project.canExport)
 
                 if project.video == nil {
-                    footerHint("Load a video to enable these controls.")
+                    // "Open", not "Load": the same verb the drop screen, the
+                    // File menu, and the open panel all use for this action.
+                    footerHint("Open a video to enable these controls.")
                 } else if !project.hasStoryText {
                     footerHint("Enter story text to export.")
                 }

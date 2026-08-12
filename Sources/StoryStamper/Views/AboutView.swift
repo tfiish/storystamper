@@ -12,8 +12,7 @@ struct AboutView: View {
                     .foregroundStyle(.tint)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Spacing.hair) {
-                    Text(AppInfo.displayName)
-                        .font(.appTitle)
+                    SheetTitle(AppInfo.displayName)
                     Text("Version \(AppInfo.version)")
                         .font(.appSmall)
                         .foregroundStyle(.secondary)
@@ -41,10 +40,7 @@ struct AboutView: View {
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
-            .padding(.top, Spacing.hair)
         }
-        .font(.appRegular)
-        .padding(Spacing.xLarge)
-        .frame(width: Metrics.sheetWidth)
+        .sheetChrome(width: Metrics.sheetWidth)
     }
 }

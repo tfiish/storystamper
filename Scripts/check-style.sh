@@ -1,8 +1,8 @@
 #!/bin/bash
 # Enforces the one rule DesignSystem.swift states: a view contains no raw
-# numbers. Geometry, color alpha, motion, and stroke patterns all come from a
-# named token, so the interface has one place to change and no two controls
-# drift apart by a point.
+# design values. Geometry, color alpha, motion, stroke patterns, and named
+# colors all come from a named token, so the interface has one place to change
+# and no two controls drift apart by a point or a shade.
 #
 # Scope is Sources/StoryStamper/Views. DesignSystem.swift is where the numbers
 # live, and the renderer and exporter do arithmetic on pixels rather than
@@ -15,7 +15,10 @@
 #      dash:, and so on. This is what catches an argument sitting on its own
 #      continuation line, which rule 1 cannot see: the check reads one line at
 #      a time, because a Swift parser is not worth writing for this.
-#   3. A CGFloat or Double constant declared in a view. Those are design
+#   3. A named color hue—.orange, Color.green—which is a design value the
+#      same way a number is. Palette holds the ones this app names; black
+#      and white are exempt, being absolute rather than theme colors.
+#   4. A CGFloat or Double constant declared in a view. Those are design
 #      values by definition; declaring one locally is how the second copy of a
 #      number starts.
 #
@@ -52,6 +55,8 @@ my @DRAWING_LABELS = qw(
 );
 
 my $LITERAL = qr/(?<![\w.])-?\d+(?:\.\d+)?/;
+# Named hues, which belong in Palette. Black and white are deliberately absent.
+my $HUES = qr/red|orange|yellow|green|mint|teal|cyan|blue|indigo|purple|pink|brown|gr[ae]y/;
 my $violations = 0;
 
 my %reported;
@@ -97,6 +102,21 @@ for my $file (@ARGV) {
         # Comments and string contents are prose, not values.
         $line =~ s{"(?:\\.|[^"\\])*"}{""}g;
         $line =~ s{(?<!:)//.*$}{};
+
+        # A named hue is a design value exactly like a number is, and it has
+        # the same failure mode: the second opinion about which green means
+        # "done" arrives as a literal in a view. Palette holds the ones this
+        # app names; the system semantics (.primary, .secondary, .tint,
+        # accentColor) need no permission.
+        #
+        # Black and white are exempt. Over video they are absolute colors
+        # rather than theme ones—a scrim is black because it is darkening
+        # pixels, not because the interface is in light mode.
+        if ($line =~ /(?<![\w.])Color\.($HUES)(?![\w])/
+            || $line =~ /(?:foregroundStyle|foregroundColor|fill|tint|stroke|strokeBorder)\(\s*\.($HUES)(?![\w])/) {
+            report($file, $number, "named color .$1 in a view (use Palette)", $raw);
+        }
+
         next unless $line =~ /\d/;
 
         for my $call (@DRAWING_CALLS) {
@@ -133,9 +153,9 @@ for my $file (@ARGV) {
 
 if ($violations) {
     my $plural = $violations == 1 ? "line" : "lines";
-    print "\ncheck-style: $violations $plural with raw literals. Add a named token to DesignSystem.swift and use it.\n";
+    print "\ncheck-style: $violations $plural with raw design values. Add a named token to DesignSystem.swift and use it.\n";
     exit 1;
 }
 ' $(find "$ROOT" -name "*.swift" | sort)
 
-echo "check-style: no raw literals in $ROOT"
+echo "check-style: no raw literals or named colors in $ROOT"

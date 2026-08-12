@@ -29,8 +29,10 @@ struct ColorRow: View {
             )
             .labelsHidden()
             // macOS's color panel has no OK button—it applies as you pick—so
-            // say that rather than leave people hunting for one.
-            .hoverLabel("Changes apply as you pick; close the panel when you are done.")
+            // say that rather than leave people hunting for one. As a hint
+            // rather than a hover label: nothing in this row draws a tooltip,
+            // and the swatches beside it gave theirs up for the same reason.
+            .accessibilityHint("Changes apply as you pick. Close the panel when you are done.")
         }
     }
 }

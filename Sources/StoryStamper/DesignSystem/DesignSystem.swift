@@ -94,6 +94,28 @@ enum Opacity {
     static let segmentShadow: Double = 0.12
 }
 
+// MARK: - Color
+
+/// The only colors this app names for itself.
+///
+/// Everything else comes from the system's semantic styles—`.primary`,
+/// `.secondary`, `.tertiary`, `.tint`, `Color.accentColor`—which already track
+/// appearance, contrast settings, and the user's accent choice. Reach for one
+/// of those first; a named color here is for the cases where no system
+/// semantic carries the meaning.
+///
+/// The emphasis ramp is a convention rather than a token, because SwiftUI's
+/// hierarchical styles cannot be stored and passed around without losing what
+/// makes them useful. It is: `.primary` for content, `.secondary` for hints,
+/// captions, and readouts, and `.tertiary` for text that should be findable
+/// but never read—which in practice is the version label alone.
+enum Palette {
+    /// A finished export. No system semantic means "this worked".
+    static let success = Color.green
+    /// A failure, anywhere it is shown.
+    static let warning = Color.orange
+}
+
 // MARK: - Motion
 
 enum Motion {
@@ -168,6 +190,12 @@ enum Interaction {
 
 // MARK: - Component sizes
 
+/// Component sizes.
+///
+/// As with `Opacity`, entries here are independent: where two hold the same
+/// number today that is a coincidence rather than a duplication. A paragraph
+/// measure and a progress bar are not the same thing because they happen to
+/// be equally wide.
 enum Metrics {
     /// The source sidebar is fixed and deliberately narrow: it holds four
     /// lines of metadata and two toggles, and every point it gives up goes to

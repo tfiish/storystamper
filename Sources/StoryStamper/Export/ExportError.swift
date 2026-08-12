@@ -13,7 +13,7 @@ enum ExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .ffmpegNotFound:
-            return "FFmpeg was not found. Install it with \"brew install ffmpeg\", or bundle an ffmpeg binary with the app."
+            return "FFmpeg was not found. Install it with brew install ffmpeg, or bundle an ffmpeg binary with the app."
         case .overlayRenderFailed:
             return "The text overlay image could not be rendered."
         case .ffmpegFailed(let status, let detail):
@@ -30,7 +30,7 @@ enum ExportError: LocalizedError {
         }
     }
 
-    /// Sentence-case title for the sheet that presents this failure. Only the
+    /// Title Case title for the sheet that presents this failure. Only the
     /// missing binary earns its own: it is the one failure here that is about
     /// the machine rather than about this export.
     var failureTitle: String {

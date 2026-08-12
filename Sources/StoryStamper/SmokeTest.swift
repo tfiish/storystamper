@@ -3,7 +3,10 @@ import Foundation
 
 /// Headless end-to-end export used during development:
 ///     StoryStamper --smoke-export input.mp4 output.mp4 ["story text"]
-/// Exercises probe, render, and FFmpeg exactly as the UI does.
+///                  [--source-resolution]
+/// Exercises probe, render, and FFmpeg exactly as the UI does. Without
+/// `--source-resolution` the export is fitted to the Story frame, which is
+/// what the app itself defaults to.
 ///
 /// Every phase is timed. Rule zero in DEVELOPING.md asks for a measurement
 /// before any change that might cost speed, and this is where that number
@@ -12,7 +15,7 @@ enum SmokeTest {
     static func run(arguments: [String]) {
         guard let flagIndex = arguments.firstIndex(of: "--smoke-export"),
               arguments.count > flagIndex + 2 else {
-            fputs("Usage: StoryStamper --smoke-export input output [text]\n", stderr)
+            fputs("Usage: StoryStamper --smoke-export input output [text] [--source-resolution]\n", stderr)
             exit(2)
         }
         let inputURL = URL(fileURLWithPath: arguments[flagIndex + 1])
@@ -29,10 +32,14 @@ enum SmokeTest {
                 var mark = clock.now
                 let info = try await VideoInfo.probe(url: inputURL)
                 let audio = info.hasAudio ? (info.audioIsAAC ? "aac, copied" : "re-encoded") : "none"
-                print("probe:    \(Int(info.displaySize.width))x\(Int(info.displaySize.height)), \(String(format: "%.2f", info.duration))s, \(info.nominalFrameRate) fps, audio: \(audio)  [\(elapsed(from: mark, clock: clock))]")
+                // Same formatters the interface uses, with an ASCII separator
+                // for the terminal, so a size or a rate can never read one way
+                // here and another in the sidebar for the same file.
+                let rate = info.frameRateText ?? "unknown"
+                print("probe:    \(VideoInfo.dimensions(info.displaySize, separator: "x")), \(String(format: "%.2f", info.duration))s, \(rate) fps, audio: \(audio)  [\(elapsed(from: mark, clock: clock))]")
 
                 let outputSize = resolution.outputSize(for: info.displaySize)
-                print("output:   \(Int(outputSize.width))x\(Int(outputSize.height))  (\(resolution.displayName))")
+                print("output:   \(VideoInfo.dimensions(outputSize, separator: "x"))  (\(resolution.displayName))")
 
                 // A second, differently styled block exercises multi-block
                 // compositing on every smoke run.
@@ -49,7 +56,7 @@ enum SmokeTest {
                     fputs("SMOKE FAIL: overlay render returned nil\n", stderr)
                     exit(1)
                 }
-                print("render:   \(Int(sample.pixelSize.width))x\(Int(sample.pixelSize.height)) px  [\(elapsed(from: mark, clock: clock))]")
+                print("render:   \(VideoInfo.dimensions(sample.pixelSize, separator: "x")) px  [\(elapsed(from: mark, clock: clock))]")
 
                 mark = clock.now
                 try await VideoExporter.export(

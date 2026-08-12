@@ -8,7 +8,8 @@ import Foundation
 /// since FFmpeg's messages are the ones worth pasting into a bug report.
 struct StoryFailure: Identifiable, Equatable {
     let id = UUID()
-    /// Sentence-case, and specific where being specific helps.
+    /// Title Case, matching macOS alert convention, and specific where being
+    /// specific helps.
     let title: String
     /// The whole message, shown selectable.
     let message: String

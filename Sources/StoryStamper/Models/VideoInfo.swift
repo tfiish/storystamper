@@ -17,6 +17,28 @@ struct VideoInfo: Sendable {
 
     var filename: String { url.lastPathComponent }
     var durationText: String { Self.timecode(duration) }
+    var dimensionsText: String { Self.dimensions(displaySize) }
+    var frameRateText: String? { Self.frameRate(nominalFrameRate) }
+
+    /// The one place a frame size is formatted, for the same reason as
+    /// `timecode`: the sidebar, the Settings copy, and the smoke test were
+    /// each building this string by hand, and had already drifted apart on
+    /// which character sits between the numbers.
+    ///
+    /// The separator is a parameter only so the command line can use an ASCII
+    /// `x`, which is a terminal convention rather than a different opinion.
+    static func dimensions(_ size: CGSize, separator: String = " × ") -> String {
+        "\(Int(size.width))\(separator)\(Int(size.height))"
+    }
+
+    /// Nil when the track reports no usable rate, so callers omit the field
+    /// rather than printing a zero. `%.5g` drops trailing zeros, so 30 reads
+    /// as "30" while 29.97 keeps its precision—the sidebar showed the former
+    /// and the smoke test the latter for the very same file.
+    static func frameRate(_ rate: Float) -> String? {
+        guard rate > 0 else { return nil }
+        return String(format: "%.5g", rate)
+    }
 
     /// The one place playback time is formatted, so the sidebar and the
     /// transport bar can never disagree about what 90 seconds looks like.
@@ -47,7 +69,7 @@ struct VideoInfo: Sendable {
             }
         }
 
-        /// Sentence-case title for the sheet that presents this failure.
+        /// Title Case title for the sheet that presents this failure.
         var failureTitle: String {
             switch self {
             case .unsupportedType:

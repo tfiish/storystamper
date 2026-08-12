@@ -21,10 +21,10 @@ struct ExportStatusView: View {
             case .completed:
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: IconSize.status))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Palette.success)
                     .accessibilityHidden(true)
-                Text("Export Complete")
-                    .font(.appRegularBold)
+                SheetTitle("Export Complete")
+                    .announced("Export complete.")
                 HStack(spacing: Spacing.medium) {
                     Button("Reveal in Finder") {
                         project.revealExportInFinder()
@@ -36,8 +36,7 @@ struct ExportStatusView: View {
                 }
             }
         }
-        .padding(Spacing.xLarge)
-        .frame(minWidth: Metrics.sheetMinWidth)
+        .sheetChrome()
     }
 }
 
@@ -57,8 +56,7 @@ private struct ExportProgressView: View {
         // applied to each child—`onReceive` there would open four
         // subscriptions to the same clock instead of one.
         VStack(spacing: Spacing.large) {
-            Text("Exporting Video")
-                .font(.appRegularBold)
+            SheetTitle("Exporting Video")
 
             ProgressView(value: progress)
                 .progressViewStyle(.linear)
@@ -66,10 +64,15 @@ private struct ExportProgressView: View {
                 // FFmpeg reports about twice a second; interpolating between
                 // updates keeps the bar from stepping.
                 .animation(.linear(duration: Motion.progress), value: progress)
+                .accessibilityLabel("Export progress")
+                // The same string the readout below shows, so what is spoken
+                // and what is drawn cannot drift—the rule SliderRow follows.
+                .accessibilityValue(statusLine)
 
             Text(statusLine)
                 .font(.appSmallDigits)
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
             Button("Cancel") {
                 project.cancelExport()
@@ -92,7 +95,7 @@ private struct ExportProgressView: View {
         guard elapsed > 1 else { return "\(percent)%" }
         let remaining = elapsed / progress - elapsed
         guard remaining.isFinite, remaining > 0 else { return "\(percent)%" }
-        return "\(percent)% — about \(formatted(remaining)) remaining"
+        return "\(percent)%, about \(formatted(remaining)) remaining"
     }
 
     private func formatted(_ seconds: Double) -> String {

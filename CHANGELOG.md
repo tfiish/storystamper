@@ -2,6 +2,23 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.9.0 — 2026-08-12
+
+The first pass of a full consistency audit ([AUDIT.md](AUDIT.md)). Mostly words, and the places where one action had picked up three names.
+
+- **One name per action, everywhere it appears.** Loading a video was called Open in the File menu, Replace in the sidebar, and Choose on the drop screen and in the panel title—two of them visible at once on the empty screen. It is now **Open Video…** until something is loaded and **Replace Video…** afterwards, in all four places. Unloading was called Unload on the button and Clear in the undo stack, so clicking the X and opening the Edit menu gave you "Undo Clear Video"; both say **Unload Video** now. The sidebar's **Remove** button, sitting next to Add Text Block, is now **Remove Text Block** like its menu item.
+- **Commands that open a panel say so.** Every command that asks something before it acts now ends in an ellipsis—Open, Replace, Export, Settings, About. Export Video in particular used to read as though it started the export on click, when a save panel comes first.
+- **Quitting only asks when there is something to lose.** It used to ask whenever a video was loaded, even with nothing typed—guarding a file path the app deliberately never remembers between launches. It now asks only when story text would be discarded. A running export still asks, since that genuinely throws work away.
+- **The opacity slider and the custom color well have lost their hover labels.** What they said is now read out by VoiceOver instead, which is where it was actually needed. Following the color swatches in 1.8.3, nothing in the style sidebar interrupts a drag with a tooltip any more.
+- **The export sheet talks to VoiceOver.** The progress bar has a name and reads out the same percentage and estimate shown on screen, and finishing or failing is announced—both used to swap the sheet's contents silently, which a screen reader had no reason to notice.
+- **The style sidebar can be resized from the keyboard.** The splitter announced itself to assistive software and then could not be operated by anything but a mouse. It now takes focus, draws the same halo every other self-drawn control does, and moves in 16-point steps with the arrow keys.
+- The video's details in the sidebar read properly aloud—"1080 by 1920" rather than "1080 times 1920"—and the filename gives VoiceOver its full path instead of the middle-truncated version on screen.
+- Named colors have a home. Success and warning now come from `Palette` rather than being written into the two sheets that use them, and `check-style.sh` fails on a bare color hue in a view the same way it already failed on a bare number.
+- The four sheets share their typography, padding, and heading size. Export and failure titles were three points smaller than About and Settings, because two entries in the design system both claimed to be the sheet-title font.
+- Frame sizes and frame rates are formatted in one place, like playback time already was. The smoke test reported "30.0 fps" for a file the sidebar called "30 fps".
+- Copy fixes: an em-dash with spaces around it in the export estimate, "cancelled" against the app's own American spelling, Instagram's Story lowercased in two places (once twice in the same sentence), "Export size" among fifteen Title Case labels, and a mid-sentence "Text Block".
+- Three doc comments told the next person that failure titles are sentence case. All five of them are Title Case, and always have been.
+
 ## 1.8.3 — 2026-08-12
 
 - **The name under each Font, Alignment, and Theme picker sits under the glyph it names.** 1.8.1 stopped those names being clipped by pinning the first and last of them to the outer edge of the control, which fixed the clipping and left every short name off to one side—"Dark" sat eleven points to the right of the moon, "System" and "Bold" a few points to the left of their own icons. Each name is now centered on its segment, and pulled back in only by however much it would actually hang off the end. Only "Monospace" is wide enough to need that, and it moves half as far as it used to.

@@ -439,7 +439,10 @@ final class StoryProject {
         panel.allowedContentTypes = Self.allowedContentTypes
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
-        panel.title = "Choose Video"
+        // Matches the command that opened it, which is state-dependent: the
+        // drop screen and the File menu both say Open, the sidebar says
+        // Replace. One action, one name, wherever it is reached from.
+        panel.title = video == nil ? "Open Video" : "Replace Video"
         if panel.runModal() == .OK, let url = panel.url {
             loadVideo(from: url)
         }
@@ -489,7 +492,7 @@ final class StoryProject {
     /// text back to a single empty block. Styling carries over, since those
     /// settings are meant to persist.
     private func clearVideo() {
-        registerUndo("Clear Video")
+        registerUndo("Unload Video")
         pause()
         loadTask?.cancel()
         loadTask = nil

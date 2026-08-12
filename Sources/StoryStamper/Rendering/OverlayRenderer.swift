@@ -22,6 +22,13 @@ enum OverlayRenderer {
     private static let cornerRadiusRatio: CGFloat = 0.6
     private static let minCornerRadius: CGFloat = 6
     private static let maxCornerRadius: CGFloat = 24
+    /// The shadow behind unboxed text. Video pixels rather than app chrome, so
+    /// deliberately not `Opacity.scrim`—but named here for the same reason
+    /// every other number in this file is, rather than sitting inline.
+    private static let shadowAlpha: CGFloat = 0.45
+    /// Blur as a fraction of the type size, so the shadow scales with the text
+    /// instead of turning into a halo on large sizes.
+    private static let shadowBlurRatio: CGFloat = 0.1
 
     // MARK: - Text block
 
@@ -87,8 +94,8 @@ enum OverlayRenderer {
         // bright footage—mirroring how Instagram treats bare Story text.
         if !style.backgroundEnabled {
             let shadow = NSShadow()
-            shadow.shadowColor = NSColor.black.withAlphaComponent(0.45)
-            shadow.shadowBlurRadius = style.fontSize * 0.1
+            shadow.shadowColor = NSColor.black.withAlphaComponent(shadowAlpha)
+            shadow.shadowBlurRadius = style.fontSize * shadowBlurRatio
             shadow.shadowOffset = .zero
             attributes[.shadow] = shadow
         }

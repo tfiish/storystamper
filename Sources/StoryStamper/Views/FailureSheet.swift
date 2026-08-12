@@ -11,24 +11,24 @@ struct FailureSheet: View {
         VStack(spacing: Spacing.large) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: IconSize.status))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Palette.warning)
                 .accessibilityHidden(true)
 
-            Text(failure.title)
-                .font(.appRegularBold)
+            SheetTitle(failure.title)
 
             Text(failure.message)
-                .font(.appRegular)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: Metrics.sheetTextWidth)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
 
-            Button("Close") { onDismiss() }
+            Button("Done") { onDismiss() }
                 .keyboardShortcut(.defaultAction)
         }
-        .padding(Spacing.xLarge)
-        .frame(minWidth: Metrics.sheetMinWidth)
+        .sheetChrome()
+        // The sheet replaces whatever was on screen without moving focus, so
+        // without this a screen reader is told nothing at all about a failure.
+        .announced("\(failure.title). \(failure.message)")
     }
 }

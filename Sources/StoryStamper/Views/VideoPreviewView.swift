@@ -78,7 +78,7 @@ struct VideoPreviewView: View {
             Text("MP4, MOV, or M4V")
                 .font(.appRegular)
                 .foregroundStyle(.secondary)
-            Button("Choose Video") {
+            Button("Open Video…") {
                 project.chooseVideo()
             }
         }

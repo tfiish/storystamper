@@ -29,9 +29,9 @@ struct SourceSidebarView: View {
         BarStrip {
             VStack(spacing: Spacing.small) {
                 HStack(spacing: Spacing.small) {
-                    Button("Settings") { project.infoSheet = .settings }
+                    Button("Settings…") { project.infoSheet = .settings }
                         .controlSize(.small)
-                    Button("About") { project.infoSheet = .about }
+                    Button("About…") { project.infoSheet = .about }
                         .controlSize(.small)
                 }
                 Text("\(AppInfo.displayName) v\(AppInfo.version)")
@@ -51,14 +51,20 @@ struct SourceSidebarView: View {
                         .truncationMode(.middle)
                         .lineLimit(1)
                         .hoverLabel(video.url.path)
+                        // The name on screen is truncated to one line, so the
+                        // full path is information the hover label has and a
+                        // screen reader would otherwise not.
+                        .accessibilityLabel(video.filename)
+                        .accessibilityValue(video.url.path)
                     Text(summary(for: video))
                         .font(.appSmall)
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
+                        .accessibilityLabel(spokenSummary(for: video))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                Button("Replace Video") {
+                Button("Replace Video…") {
                     project.chooseVideo()
                 }
             } else {
@@ -75,20 +81,31 @@ struct SourceSidebarView: View {
     /// Dimensions, length, and frame rate on one line—the three things worth
     /// glancing at, in the order you would ask for them.
     private func summary(for video: VideoInfo) -> String {
-        var parts = [
-            "\(Int(video.displaySize.width)) × \(Int(video.displaySize.height))",
-            video.durationText,
-        ]
-        if video.nominalFrameRate > 0 {
-            parts.append(String(format: "%.5g fps", video.nominalFrameRate))
+        var parts = [video.dimensionsText, video.durationText]
+        if let rate = video.frameRateText {
+            parts.append("\(rate) fps")
         }
         return parts.joined(separator: " · ")
+    }
+
+    /// The same three facts, said rather than shown. The visible line leans on
+    /// characters a screen reader has no good reading for—`×` becomes "times",
+    /// and the middle dots become nothing at all.
+    private func spokenSummary(for video: VideoInfo) -> String {
+        var parts = [
+            "\(Int(video.displaySize.width)) by \(Int(video.displaySize.height))",
+            video.durationText,
+        ]
+        if let rate = video.frameRateText {
+            parts.append("\(rate) frames per second")
+        }
+        return parts.joined(separator: ", ")
     }
 
     private var previewSection: some View {
         Section("Preview") {
             Toggle("Area Guides", isOn: $project.showSafeArea)
-            Text("Shows approximately where Instagram's UI covers the top and bottom of a story.")
+            Text("Shows approximately where Instagram's UI covers the top and bottom of a Story.")
                 .font(.appSmall)
                 .foregroundStyle(.secondary)
         }

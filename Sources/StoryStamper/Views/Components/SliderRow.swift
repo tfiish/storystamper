@@ -13,7 +13,10 @@ struct SliderRow: View {
     /// Spoken name, when the visible label is too terse on its own—two
     /// sections both have a row called "Color".
     var spokenName: String?
-    var help: String?
+    /// Read as an accessibility hint, and not drawn on hover. A slider states
+    /// its value in its own readout, so a tooltip on top of one interrupted
+    /// the drag it was describing.
+    var hint: String?
 
     var body: some View {
         LabeledContent(title) {
@@ -26,15 +29,10 @@ struct SliderRow: View {
         }
     }
 
-    @ViewBuilder
     private var slider: some View {
-        let base = Slider(value: $value, in: range)
+        Slider(value: $value, in: range)
             .accessibilityLabel(spokenName ?? title)
             .accessibilityValue(format(value))
-        if let help {
-            base.hoverLabel(help)
-        } else {
-            base
-        }
+            .accessibilityHint(hint ?? "")
     }
 }

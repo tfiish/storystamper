@@ -153,9 +153,9 @@ Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist`,
 
 ## Design system
 
-Every number the interface draws with lives in [DesignSystem/DesignSystem.swift](Sources/StoryStamper/DesignSystem/DesignSystem.swift)—including color alpha, motion durations, and stroke patterns, not just geometry. Views contain no raw literals; if you need a value that is not there, add it there first.
+Every design value the interface draws with lives in [DesignSystem/DesignSystem.swift](Sources/StoryStamper/DesignSystem/DesignSystem.swift)—including color alpha, motion durations, stroke patterns, and named colors, not just geometry. Views contain no raw literals; if you need a value that is not there, add it there first.
 
-That is enforced rather than remembered. `./Scripts/check-style.sh` reads every file under `Views/` and fails on a numeric literal inside a call the interface draws with, after a drawing argument label, or in a locally declared `CGFloat` or `Double`. `make-app.sh` runs it before the release build, and it costs about 40 ms. The script's own header lists what it looks at, and the one thing it cannot see—a call split across lines, which is why the argument-label rule sits alongside the call rule.
+That is enforced rather than remembered. `./Scripts/check-style.sh` reads every file under `Views/` and fails on a numeric literal inside a call the interface draws with, after a drawing argument label, or in a locally declared `CGFloat` or `Double`—and on a named color hue outside `Palette`. `make-app.sh` runs it before the release build, and it costs about 40 ms. The script's own header lists what it looks at, and the one thing it cannot see—a call split across lines, which is why the argument-label rule sits alongside the call rule.
 
 | Token group | Values | Use |
 | --- | --- | --- |
@@ -165,6 +165,7 @@ That is enforced rather than remembered. `./Scripts/check-style.sh` reads every 
 | `BorderWidth` | 1, 2, 3 | Strokes and hairlines |
 | `Stroke` | named | Dash patterns |
 | `Opacity` | named | Scrims, washes, rules, borders, rings, halos |
+| `Palette` | named | Success and warning. Everything else is a system semantic |
 | `Motion` | named | Animation and hover-delay durations |
 | `FocusHalo` | named | The focus indicator for self-drawn controls |
 | `IconSize` | 9, 12, 14, 16, 26, 34, 44 | Glyphs, including font specimens |
@@ -178,6 +179,32 @@ Icon sizes are deliberately a separate scale from text: glyphs are balanced opti
 
 Two literals are allowed, and only two: `spacing: 0`, which means "no gap" structurally rather than picking a value off the scale, and `opacity(flag ? 1 : 0)`, which is fully on or fully off rather than an alpha. The checker knows about both, and about nothing else.
 
+Color works the other way round from the numbers: reach for a system semantic first. `.primary`, `.secondary`, `.tertiary`, `.tint`, and `Color.accentColor` already track appearance, contrast settings, and the user's accent choice, and a named color cannot. `Palette` exists only for the two meanings no system semantic carries—success and warning. `Color.black` and `Color.white` are exempt from the checker because over video they are absolute colors rather than theme ones: a scrim is black because it is darkening pixels, not because the interface is in light mode.
+
+The emphasis ramp is convention rather than token, because SwiftUI's hierarchical styles cannot be stored and passed around without losing what makes them work: `.primary` for content, `.secondary` for hints, captions, and readouts, `.tertiary` for text that should be findable but never read—which in practice is the version label alone.
+
+## Sheets
+
+Two shapes, deliberately. About and Settings are documents: fixed measure, left-aligned, a divider under the title. The export and failure sheets are outcomes: centered on an icon, sized to their content, because "Export Complete" and a 300-character FFmpeg error have no business being the same width.
+
+Everything else about them is shared, and lives in [`SheetChrome.swift`](Sources/StoryStamper/Views/Components/SheetChrome.swift). Use `SheetTitle` for the heading and `.sheetChrome(width:)` for the frame; pass a width for a document, omit it for a status sheet. All four dismiss with a button reading **Done**.
+
+## Naming what the app does
+
+One action, one name, wherever it is reached from—the control, the menu item, the panel title, and the undo step alike. The undo name is the one people forget, and it is the one that shows up in a different menu from the button that caused it.
+
+| Action | Name |
+| --- | --- |
+| Load a video | **Open Video…** when none is loaded, **Replace Video…** when one is |
+| Discard the video | **Unload Video** |
+| Add a block | **Add Text Block** |
+| Remove a block | **Remove Text Block** |
+| Export | **Export Video…** |
+
+A trailing ellipsis means the command opens a panel before it does anything. Every command above that takes one has it.
+
+The object is a **text block**: Title Case in a control label or menu item, lowercase in a sentence. Instagram's **Story** is capitalized, always.
+
 ## Style rules for this repo
 
 - Oxford comma in any list, in code comments, UI copy, and docs alike.
@@ -186,3 +213,5 @@ Two literals are allowed, and only two: `spacing: 0`, which means "no gap" struc
 - Before writing a control, check `Views/Components`. A second copy of a slider row or an icon button is how the first drift starts.
 - Run `./Scripts/check-style.sh` before opening a pull request, or build the app bundle, which runs it for you.
 - Icon-only controls take a spoken label. `IconButton` and `GlyphPicker` both require one, so this is enforced rather than remembered.
+- A control that draws itself is reachable by keyboard: focusable, a `focusHalo`, arrow keys, and an `accessibilityAdjustableAction` where it has a range. `GlyphPicker` and `SidebarSplitter` are the two worked examples.
+- Anything a hover label says, the accessibility layer says too—as a label where it names the control, as a hint where it explains one. Hover labels themselves are for icon-only controls, which have no other way to say what they are; a control that already shows its own value does not get one.

@@ -115,18 +115,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if project.isExporting {
             guard confirm(
                 title: "Quit while an export is running?",
-                message: "The export will be cancelled, and the partly encoded file discarded. Nothing will be written to the destination you chose.",
+                message: "The export will be canceled, and the partly encoded file discarded. Nothing will be written to the destination you chose.",
                 confirmTitle: "Cancel Export and Quit"
             ) else {
                 return false
             }
             project.cancelExport()
-        } else if project.video != nil {
+        } else if project.hasStoryText {
+            // Gated on typed text, not on a loaded video. Unloading a video is
+            // undoable and costs nothing to redo—and the app never remembers
+            // which file was open anyway—so asking about one is a click spent
+            // guarding something that was never kept. Text is the only thing
+            // here that quitting actually destroys.
             return confirm(
-                title: "Quit Story Stamper?",
-                message: project.hasStoryText
-                    ? "The loaded video and your story text will be discarded. Your font, colors, background, and padding are kept."
-                    : "The loaded video will be discarded. Your font, colors, background, and padding are kept.",
+                title: "Quit \(AppInfo.displayName)?",
+                message: "Your story text will be discarded. Your font, colors, background, and padding are kept.",
                 confirmTitle: "Quit"
             )
         }
