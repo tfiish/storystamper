@@ -19,7 +19,7 @@ enum ExportResolution: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var displayName: String {
         switch self {
-        case .source: return "Match the source"
+        case .source: return "Original quality"
         case .story: return "Story (1080)"
         }
     }

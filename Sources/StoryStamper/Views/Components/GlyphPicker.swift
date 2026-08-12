@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// A row of glyphs where exactly one is chosen: font, alignment, and theme.
@@ -15,12 +16,16 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
     let title: String
     @Binding var selection: Value
     let items: [Value]
-    /// Human-readable name of one option, used for the caption, the hover
-    /// label, and the accessibility value.
+    /// Human-readable name of one option, used for the caption and for the
+    /// accessibility value.
     let name: (Value) -> String
     @ViewBuilder let glyph: (Value) -> Glyph
 
     @FocusState private var focused: Bool
+    /// Width of the control, measured rather than assumed: the caption cannot
+    /// be placed under a segment without knowing how wide a segment is. Nil
+    /// until the first layout.
+    @State private var controlWidth: CGFloat?
 
     var body: some View {
         VStack(spacing: Spacing.tight) {
@@ -29,39 +34,44 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
         }
     }
 
-    /// Laid out as one cell per segment so the name sits under the glyph it
-    /// belongs to. The cells are placeholders and the text is drawn over them
-    /// at its natural width, so a long name stays on one line rather than
-    /// being squeezed into a 30-point column.
-    ///
-    /// Interior names center on their segment. The first and last pin to the
-    /// outer edge instead, so they grow inward—centering those would push the
-    /// text past the control's own bounds, where the row around it clips.
+    /// One line naming the current choice, centered under the glyph it names.
     private var caption: some View {
-        HStack(spacing: BorderWidth.hairline) {
-            ForEach(items, id: \.self) { item in
-                Color.clear
-                    .frame(maxWidth: .infinity)
-                    .overlay(alignment: captionAlignment(for: item)) {
-                        if item == selection {
-                            Text(name(item))
-                                .font(.appSmall)
-                                .foregroundStyle(.secondary)
-                                .fixedSize()
-                        }
-                    }
-            }
-        }
-        .padding(.horizontal, BorderWidth.emphasis)
-        .frame(height: Metrics.captionHeight)
-        .accessibilityHidden(true)
+        Text(name(selection))
+            .font(.appSmall)
+            .foregroundStyle(.secondary)
+            .fixedSize()
+            .offset(x: captionOffset)
+            .frame(maxWidth: .infinity)
+            .frame(height: Metrics.captionHeight)
+            .accessibilityHidden(true)
     }
 
-    private func captionAlignment(for item: Value) -> Alignment {
-        guard let index = items.firstIndex(of: item) else { return .center }
-        if index == items.startIndex { return .leading }
-        if index == items.index(before: items.endIndex) { return .trailing }
-        return .center
+    /// How far the caption sits from the control's center: on the selected
+    /// segment's center, then pulled back in by however much it would
+    /// otherwise hang off the end of the control.
+    ///
+    /// Both halves of that are needed. A name wider than its own segment has
+    /// to overhang, and under the first or last segment that overhang would
+    /// leave the control, where the row around it clips—which is what an
+    /// unconditional pin to the outer edge used to prevent. The pin paid for
+    /// it with every name that fitted: "Dark", under the third of three
+    /// segments, sat eleven points to the right of the moon it named. Clamping
+    /// only where there is genuinely no room moves nothing that fits, and
+    /// moves "Monospace" by about twelve points instead of twenty-four.
+    private var captionOffset: CGFloat {
+        guard let controlWidth,
+              let index = items.firstIndex(of: selection) else { return 0 }
+
+        let inner = controlWidth - BorderWidth.emphasis * 2
+        let gaps = BorderWidth.hairline * CGFloat(items.count - 1)
+        let segment = (inner - gaps) / CGFloat(items.count)
+        let segmentCenter = CGFloat(index) * (segment + BorderWidth.hairline) + segment / 2
+
+        let room = inner / 2 - CaptionWidth.of(name(selection)) / 2
+        // A name wider than the whole control cannot be kept inside it, and
+        // the least bad place for that is the middle.
+        guard room > 0 else { return 0 }
+        return min(max(segmentCenter - inner / 2, -room), room)
     }
 
     private var segments: some View {
@@ -74,6 +84,16 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
         .background {
             RoundedRectangle(cornerRadius: Radius.small)
                 .fill(.quaternary)
+        }
+        .background {
+            // Measured around the segments rather than the whole picker,
+            // because the segments are what the caption lines up with.
+            GeometryReader { proxy in
+                Color.clear
+                    .onChange(of: proxy.size.width, initial: true) { _, width in
+                        controlWidth = width
+                    }
+            }
         }
         .focusable()
         .focused($focused)
@@ -116,5 +136,23 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
         guard items.indices.contains(next) else { return .handled }
         selection = items[next]
         return .handled
+    }
+}
+
+/// Caption widths, measured once each and kept.
+///
+/// `Font.appSmall` is the system font at `TextSize.small`, so AppKit measures
+/// exactly what SwiftUI will draw—which is what lets the caption be placed
+/// without a second layout pass to discover how wide it came out.
+@MainActor
+private enum CaptionWidth {
+    private static var cache: [String: CGFloat] = [:]
+
+    static func of(_ text: String) -> CGFloat {
+        if let cached = cache[text] { return cached }
+        let attributes: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: TextSize.small)]
+        let width = NSAttributedString(string: text, attributes: attributes).size().width
+        cache[text] = width
+        return width
     }
 }

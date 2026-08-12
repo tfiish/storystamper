@@ -20,7 +20,7 @@ struct SettingsView: View {
                         Text(choice.displayName).tag(choice)
                     }
                 }
-                Text("Instagram serves Stories at 1080 \u{00D7} 1920. Exporting a 4K clip at 4K takes far longer and uploads far more, for pixels that get thrown away. Sources at or below 1080 are never enlarged.")
+                Text("Instagram serves Stories at 1080 \u{00D7} 1920. Exporting a 4K clip at 4K takes far longer than exporting at 1080p, and is not rendered in an Instagram story. (Sources below 1080p are never upscaled.)")
                     .font(.appSmall)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

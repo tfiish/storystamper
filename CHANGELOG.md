@@ -2,6 +2,13 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.8.3 — 2026-08-12
+
+- **The name under each Font, Alignment, and Theme picker sits under the glyph it names.** 1.8.1 stopped those names being clipped by pinning the first and last of them to the outer edge of the control, which fixed the clipping and left every short name off to one side—"Dark" sat eleven points to the right of the moon, "System" and "Bold" a few points to the left of their own icons. Each name is now centered on its segment, and pulled back in only by however much it would actually hang off the end. Only "Monospace" is wide enough to need that, and it moves half as far as it used to.
+- **The blue focus ring no longer appears when you click.** Clicking a control focuses it, so the ring was announcing something you had just done with your own mouse—around a picker that was working, it read like a validation error. Tabbing to a control still rings it, which is the only thing it was ever for. This applies to every control that draws its own focus: the pickers, the color swatches, the play and close buttons, and the padding shortcut.
+- **The color swatches have lost their hover labels.** A swatch already shows its color, and the ring and tick already show which one is on, so naming it on hover repeated both. They keep their spoken labels for VoiceOver.
+- Reworded the export size note in Settings to say plainly what a 4K export costs you, and what Instagram does with it. The setting's other option is now called Original quality rather than Match the source.
+
 ## 1.8.2 — 2026-08-12
 
 - **Undo, at last.** Command-Z takes back clearing a video, adding or removing a text block, a style change, and a move—whether you moved the block by dragging it or with the arrow keys. Command-Shift-Z puts it back. The Edit menu names the step, so it reads "Undo Move Text Block" rather than a greyed-out word. One continuous slider drag is one undo, not ninety, and undoing a cleared video restores the clip without re-reading it from disk.

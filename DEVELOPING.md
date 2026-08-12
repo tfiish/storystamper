@@ -99,7 +99,7 @@ Sources/StoryStamper/
     ├── SettingsView.swift       The preferences sheet
     ├── AboutView.swift          What the app is for, with a repository link
     └── Components/              Shared UI. Reach for one of these before writing
-        ├── GlyphPicker.swift    Segmented glyph control: fast tooltip, focus, keys
+        ├── GlyphPicker.swift    Segmented glyph control: caption, focus, keys
         ├── SliderRow.swift      Labelled slider plus fixed-width readout
         ├── ColorRow.swift       Preset swatches plus the system color picker
         ├── IconButton.swift     Icon-only button; label is required, not optional

@@ -3,6 +3,10 @@ import SwiftUI
 /// One-click preset swatches followed by the system color picker for anything
 /// else. The active preset gets a ring and a tick—two channels, so selection
 /// never rests on color alone.
+///
+/// The swatches carry no hover label. They are the one kind of icon-only
+/// control that already shows what it does, so a tooltip naming the color said
+/// nothing the swatch had not. They still carry a spoken label.
 struct ColorRow: View {
     let presets: [ColorSwatch]
     @Binding var selection: RGBAColor
@@ -64,7 +68,8 @@ private struct SwatchButton: View {
         .focused($focused)
         .focusEffectDisabled()
         .focusHalo(focused, shape: Circle())
-        .hoverLabel(preset.name)
+        // No hover label: the swatch shows the colour, and the ring and tick
+        // show which one is on, so naming it on hover only repeated them.
         .accessibilityLabel(preset.name)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
