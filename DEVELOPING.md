@@ -66,11 +66,12 @@ Sources/StoryStamper/
 │   └── DesignSystem.swift       Every number the interface draws with
 ├── Models/                      Value types. No behavior beyond their own data.
 │   ├── OverlayStyle.swift       Codable style settings + font/color/alignment enums
-│   ├── OverlayBlock.swift       One text block: content, style, normalized center
+│   ├── OverlayBlock.swift       One block: content, style, normalized center
 │   ├── RenderedOverlay.swift    A rasterized block, and one placed for compositing
 │   ├── VideoInfo.swift          One-shot AVFoundation probe (rotation-aware size)
 │   ├── AppearanceChoice.swift   System, light, or dark, applied to NSApp
 │   ├── ExportPhase.swift        Where an export is in its lifecycle
+│   ├── ExportResolution.swift   Story frame or original quality, and the math
 │   ├── StoryFailure.swift       Anything that went wrong, in one shape
 │   └── InfoSheet.swift          Which of About or Settings is showing
 ├── State/
@@ -105,6 +106,10 @@ Sources/StoryStamper/
         ├── IconButton.swift     Icon-only button; label is required, not optional
         ├── BarStrip.swift       Pinned bar-material strip (both footers, transport)
         ├── SidebarSplitter.swift  Draggable divider for the style sidebar
+        ├── SheetChrome.swift    Title, padding, base font, and width for all four
+        ├── HoverLabel.swift     The app's own tooltip; .help() is banned
+        ├── FocusHaloModifier.swift  Keyboard-focus ring for self-drawn controls
+        ├── Announcement.swift   Speaks a state change VoiceOver cannot infer
         └── FontSample.swift     Font specimens rasterized in their own typefaces
 ```
 
@@ -124,7 +129,7 @@ Sources/StoryStamper/
 - **Nothing is written to the user's chosen destination until the encode succeeds.** FFmpeg writes into `ExportScratch`, and `VideoExporter.install` moves the finished file into place. A cancel, a failure, or a quit therefore leaves no truncated MP4 behind. Do not "simplify" this by pointing FFmpeg at the destination.
 - **Destructive actions go through `requestClearVideo` and `requestRemoveSelectedBlock`.** Those are the only two paths that discard typed text, and the private half of each is where the undo step is registered. Calling `clearVideo` or `removeSelectedBlock` directly would throw text away with no way back, which is why both are private. There is no confirmation prompt any more: 1.8.2 decided that a warning and an undo stack are two answers to the same question, and kept the better one. Quitting still asks, because undo does not survive it.
 - **Undo goes through `StoryProject`, not the views.** The window's undo manager arrives via `@Environment(\.undoManager)` in `MainWindowView`; everything else is registered inside the project, where the mutations are. A burst of same-kind edits on one block coalesces into a single step (`Motion.undoCoalesce`), so a slider drag is one Command-Z. Text is deliberately *not* registered—the text editor keeps its own undo, and two stacks over one field is worse than one.
-- **There is one error type and one place it appears.** Loading and exporting both produce a `StoryFailure`, shown by `FailureSheet` with the message selectable. `ExportPhase` has no failure case for this reason. Adding a second presentation is how the alert-versus-sheet split happened the first time.
+- **There is one error type and one place it appears.** Loading and exporting both produce a `StoryFailure`, shown by `FailureSheet` with the message selectable. `ExportPhase` has no failure case for this reason. Adding a second presentation is how the alert-versus-sheet split happened the first time. The quit confirmation is an `NSAlert` and is not an exception to this—it asks a question rather than reporting a failure, and it has to answer synchronously; see *The one `NSAlert`* under Sheets.
 - **Progress is read with `readabilityHandler`, not `FileHandle.bytes`.** The async byte sequence buffers so aggressively that progress arrived in one late lump; the handler-based reader delivers FFmpeg's twice-a-second updates live.
 
 ## Measuring
@@ -188,6 +193,16 @@ The emphasis ramp is convention rather than token, because SwiftUI's hierarchica
 Two shapes, deliberately. About and Settings are documents: fixed measure, left-aligned, a divider under the title. The export and failure sheets are outcomes: centered on an icon, sized to their content, because "Export Complete" and a 300-character FFmpeg error have no business being the same width.
 
 Everything else about them is shared, and lives in [`SheetChrome.swift`](Sources/StoryStamper/Views/Components/SheetChrome.swift). Use `SheetTitle` for the heading and `.sheetChrome(width:)` for the frame; pass a width for a document, omit it for a status sheet. All four dismiss with a button reading **Done**.
+
+### The one `NSAlert`, and why it stays
+
+Quitting asks with an `NSAlert` ([StoryStamperApp.swift](Sources/StoryStamper/StoryStamperApp.swift)). It is the only one in the app, and it is deliberate rather than left over.
+
+`windowShouldClose` is the only hook that can call off a close before AppKit performs it, and it has to answer `Bool` synchronously. A SwiftUI sheet cannot: presenting one returns immediately and the answer arrives later, by which point the window has gone. `NSAlert.runModal` runs its own modal loop and returns the answer, which is exactly the shape the hook needs. See [WindowCloseGuard.swift](Sources/StoryStamper/Support/WindowCloseGuard.swift) for why that hook and no other.
+
+So the split is between two different questions, not two different opinions about presentation: **a failure is something the app is telling you, and it goes in a sheet; a quit is something the app is asking you before it stops existing, and it blocks.** The "one error, one place" invariant below is about failures, and it still holds without exception—no failure anywhere reaches an alert.
+
+The alternative is to stop vetoing the close, let the window go, defer termination with `.terminateLater`, and drive a sheet on a window that is on its way out. That is materially more machinery on the quit path in exchange for typography, and rule zero is not on its side. Do not "fix" this without reading this paragraph first.
 
 ## Naming what the app does
 

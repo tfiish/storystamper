@@ -23,9 +23,12 @@ extension Font {
     static let appSmallDigits = Font.system(size: TextSize.small).monospacedDigit()
     /// Body copy and text input.
     static let appRegular = Font.system(size: TextSize.regular)
-    /// Emphasized body copy, such as sheet titles.
+    /// Emphasis at body size: a run of copy that needs weight without leaving
+    /// the paragraph it sits in. Not a heading—`.appTitle` owns those,
+    /// including every sheet title. Both comments used to claim sheet titles,
+    /// which is how two of the four ended up 3 points smaller than the rest.
     static let appRegularBold = Font.system(size: TextSize.regular, weight: .semibold)
-    /// Prominent headings.
+    /// Prominent headings, and the only font a sheet title takes.
     static let appTitle = Font.system(size: TextSize.title, weight: .semibold)
 }
 
@@ -245,5 +248,6 @@ enum Metrics {
     static let sheetWidth: CGFloat = 420
     /// Paragraph measure for wrapped body copy inside a sheet.
     static let sheetTextWidth: CGFloat = 280
+    /// The export sheet's progress bar.
     static let progressWidth: CGFloat = 280
 }

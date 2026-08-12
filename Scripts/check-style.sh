@@ -4,9 +4,10 @@
 # colors all come from a named token, so the interface has one place to change
 # and no two controls drift apart by a point or a shade.
 #
-# Scope is Sources/StoryStamper/Views. DesignSystem.swift is where the numbers
-# live, and the renderer and exporter do arithmetic on pixels rather than
-# drawing chrome, so neither is checked here.
+# Scope for the design-system rules is Sources/StoryStamper/Views.
+# DesignSystem.swift is where the numbers live, and the renderer and exporter
+# do arithmetic on pixels rather than drawing chrome, so neither is checked
+# there. The two house rules at the end cover all of Sources.
 #
 # What is flagged:
 #   1. A numeric literal inside a call the interface draws with—.frame,
@@ -21,6 +22,16 @@
 #   4. A CGFloat or Double constant declared in a view. Those are design
 #      values by definition; declaring one locally is how the second copy of a
 #      number starts.
+#
+# And across all of Sources, the two house rules AGENTS.md and DEVELOPING.md
+# state but nothing used to check:
+#   5. A force unwrap. Errors surface as readable messages, so there is no
+#      case for crashing on a nil. Implicitly unwrapped optionals in a type
+#      position are exempt: the ObjC bridge writes `Selector!` for us.
+#   6. A debug write to stderr. One of these shipped in a release build, on
+#      every appearance of a picker, carrying the only force unwrap in the
+#      codebase—which is the whole argument for this rule costing a
+#      millisecond. The smoke test is exempt: printing is its interface.
 #
 # The two sanctioned literals, and the only two:
 #   spacing: 0            structural "no gap", not a value off the scale
@@ -159,3 +170,53 @@ if ($violations) {
 ' $(find "$ROOT" -name "*.swift" | sort)
 
 echo "check-style: no raw literals or named colors in $ROOT"
+
+# The house rules, over everything. Cheap enough to be worth having: a debug
+# write and a force unwrap reached a release build together once already.
+perl -e '
+use strict;
+use warnings;
+
+my $violations = 0;
+
+for my $file (@ARGV) {
+    open my $handle, "<", $file or die "check-style: cannot read $file: $!\n";
+    # Printing is what the smoke test is for.
+    my $prints = $file =~ /SmokeTest\.swift$/;
+    my $number = 0;
+    while (my $raw = <$handle>) {
+        $number++;
+        chomp $raw;
+        my $line = $raw;
+        $line =~ s{"(?:\\.|[^"\\])*"}{""}g;
+        $line =~ s{(?<!:)//.*$}{};
+
+        # An implicitly unwrapped optional in a type position is the ObjC
+        # bridge talking, not a decision anyone made: `Selector!`, `NSWindow!`.
+        my $code = $line;
+        $code =~ s/:\s*[A-Z][\w.]*(?:<[^>]*>)?\s*!//g;
+
+        if ($code =~ /[\w\)\]]!(?!=)/) {
+            (my $trimmed = $raw) =~ s/^\s+//;
+            print "$file:$number: force unwrap\n    $trimmed\n";
+            $violations++;
+        }
+
+        next if $prints;
+        if ($line =~ /FileHandle\.standardError|\bPROBE\b/) {
+            (my $trimmed = $raw) =~ s/^\s+//;
+            print "$file:$number: debug write to stderr\n    $trimmed\n";
+            $violations++;
+        }
+    }
+    close $handle;
+}
+
+if ($violations) {
+    my $plural = $violations == 1 ? "line" : "lines";
+    print "\ncheck-style: $violations $plural break a house rule. See AGENTS.md.\n";
+    exit 1;
+}
+' $(find Sources -name "*.swift" | sort)
+
+echo "check-style: no force unwraps or debug writes in Sources"

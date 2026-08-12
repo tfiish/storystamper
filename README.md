@@ -19,7 +19,7 @@ Story Stamper collects nothing, sends nothing, and needs no account. This is ver
 - **No networking of any kind.** The app contains no HTTP client and no sockets, and never makes a request. The only URL anywhere in it is the link to this repository in the About box, which opens in your browser if you click it. It imports only Apple's own frameworks—AppKit, SwiftUI, AVFoundation, Core Graphics, and Foundation—and has zero third-party dependencies ([Package.swift](Package.swift) declares none).
 - **No analytics, telemetry, crash reporting, or update checks.**
 - **Your video never leaves your Mac.** It is read from the location you choose, and the finished file is written where you tell it to go. Nothing else touches it.
-- **The only things written outside your export** are your preferences in `UserDefaults` (font, size, colors, background, padding, alignment, appearance, sidebar width, and export size) and, during an export, a temporary folder holding the overlay PNG and the in-progress encode. That folder is deleted when the export finishes, and swept again at launch and at quit so a crash cannot leave anything behind.
+- **The only things written outside your export** are your preferences in `UserDefaults` (font, size, colors, background, padding, alignment, appearance, sidebar width, and export size) and, during an export, a temporary folder holding the overlay PNG and the in-progress encode. That folder is deleted when the export finishes; quitting moves anything left aside instantly, and the next launch clears it in the background, so a crash cannot leave anything behind.
 - **Your story text is never saved to disk**, by design—it lives only in memory during the session.
 
 The one external program involved is FFmpeg, which runs locally on your machine to encode the video. It is invoked directly as a subprocess with an argument list, never through a shell.
@@ -60,19 +60,19 @@ The app icon is generated from [Scripts/make-icon.swift](Scripts/make-icon.swift
 
 ## Using it
 
-1. Drag an MP4, MOV, or M4V into the window, or click Choose Video.
-2. Type into Story Text at the top of the right panel—the overlay updates live, preserving your line breaks and wrapping long lines automatically. Click Add Text Block for up to three independently styled overlays; the controls always edit the selected block, and a dashed ring marks the selection.
+1. Drag an MP4, MOV, or M4V into the window, or click Open Video.
+2. Type into Story Text at the top of the right panel—the overlay updates live, preserving your line breaks and wrapping long lines automatically. Click Add Block for up to three independently styled overlays; the controls always edit the selected block, and a dashed ring marks the selection.
 3. Adjust font, size, alignment, color, background, and padding below it. Font and alignment are shown as sample glyphs rather than menus, so each control previews its own effect.
 4. Drag any text block where you want it on the preview, or select it and use the arrow keys—Shift-arrow moves farther. Dragging near the horizontal or vertical midline snaps to it, and a guide line appears to show the snap.
 5. Click the X in the top-right corner of the video to unload it and start over. The story text clears and your styling carries over to the next clip. It does not ask first—Command-Z puts the video and the text back, as it does for adding or removing a block, restyling one, and moving one.
 6. Optionally turn on Area Guides, which approximate where Instagram's UI covers the top and bottom of a Story (they never appear in the export), and set Theme to System, Light, or Dark.
-7. Click Export Video, choose a destination, and wait for the progress bar. The default filename appends `-story` so the source is never overwritten. Nothing is written to that destination until the encode finishes, so a cancelled or failed export leaves no half-written file behind. Exports are sized to a 1080-wide Story frame by default, which is what Instagram serves; Settings can switch that to Original quality, which encodes at the source's own resolution.
+7. Click Export Video, choose a destination, and wait for the progress bar. The default filename appends `-story` so the source is never overwritten. Nothing is written to that destination until the encode finishes, so a canceled or failed export leaves no half-written file behind. Exports are sized to a 1080-wide Story frame by default, which is what Instagram serves; Settings can switch that to Original quality, which encodes at the source's own resolution.
 
 Presentation settings (font, size, colors, background, padding, and alignment) persist between launches, as do your appearance choice and the width of the style sidebar. The text itself intentionally does not, and neither does the undo history.
 
-The style sidebar on the right can be resized by dragging the divider beside it. Settings, reached from the bottom-left or Command-comma, holds the export size.
+The style sidebar on the right can be resized by dragging the divider beside it, or by tabbing to the divider and using the arrow keys. Settings, reached from the bottom-left or Command-comma, holds the export size.
 
-Everything above is also in the menu bar, with shortcuts: Command-O to open or replace, Command-E to export, Command-Shift-N to add a text block, Command-1 through Command-3 to select one, Command-Shift-A for the guides, and Command-Z to undo.
+Everything above is also in the menu bar, with shortcuts: Command-O to open or replace, Command-E to export, Command-Shift-N to add a block, Command-Shift-Delete to remove one, Command-1 through Command-3 to select one, Command-Shift-A for the guides, and Command-Z to undo.
 
 ## How the renderer works
 

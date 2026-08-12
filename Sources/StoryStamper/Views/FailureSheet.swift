@@ -3,6 +3,12 @@ import SwiftUI
 /// The one place a failure is shown, whichever half of the app produced it.
 /// The message is always selectable: an FFmpeg exit status is something people
 /// copy into an issue, and having to retype it is the whole complaint.
+///
+/// The quit confirmation's `NSAlert` is not a second answer to this. It asks a
+/// question the app must have answered before `windowShouldClose` returns, and
+/// a sheet cannot answer synchronously; DEVELOPING.md sets out the reasoning
+/// under *The one `NSAlert`*. Nothing that reports a failure goes anywhere but
+/// here.
 struct FailureSheet: View {
     let failure: StoryFailure
     let onDismiss: () -> Void

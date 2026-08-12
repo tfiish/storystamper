@@ -22,6 +22,22 @@ Everything below was fixed and shipped in 1.9.0. **Line numbers in the findings 
 
 **Still open:** H2 is done, H4 is a documented decision, and what remains is listed in §19 plus the two judgment calls in the closing note.
 
+### Closed from source, 1.9.2
+
+The last of the findings that did not need eyes. **§19 is now the only section with anything left in it.**
+
+**H4 — closed as intentional, not as drift.** The `NSAlert` stays. The reasoning is written down in two places rather than living in this file: DEVELOPING.md gains *The one `NSAlert`, and why it stays* under Sheets, and [FailureSheet.swift](Sources/StoryStamper/Views/FailureSheet.swift) — the file that makes the "one place a failure is shown" claim — now says why the quit prompt is not a second answer to it. The split is between a failure being reported and a question being asked before the app stops existing, and `windowShouldClose` has to have that answer synchronously. The deferred-termination rewrite remains available and is described in the DEVELOPING.md note; it buys typography at the cost of machinery on the quit path, which rule zero does not favor. **Reopening this needs a reason that paragraph does not already answer.**
+
+**F2 — closed as intentional.** The preview canvas insets by `Spacing.medium` and the drop-target ring by `Spacing.small`, and [VideoPreviewView.swift](Sources/StoryStamper/Views/VideoPreviewView.swift) now records why: the ring marks the pane that accepts the file, not the canvas inside it, so it deliberately sits outside the content rather than framing it twice. No change to what is drawn.
+
+**V3 and I3 were already closed** and the audit had not caught up: `BarStrip.horizontalPadding` carries its override rule, and `Metrics` carries the same "coincident values are not duplicates" note `Opacity` does, in its enum header.
+
+**M1's loser doc comment.** `.appRegularBold` still described itself as the font for sheet titles, which is the exact ambiguity that made two sheets 3 pt smaller than the other two. It now describes emphasis at body size and points at `.appTitle` for headings. The token has no callers today; it stays as vocabulary, and DEVELOPING.md lists it.
+
+**I1's residual backstop, built.** [check-style.sh](Scripts/check-style.sh) gains two house rules over **all** of `Sources/`, not just `Views/`: no force unwraps, and no debug writes to stderr. Both were already stated in AGENTS.md and DEVELOPING.md and neither was checked, which is how a `PROBE` write carrying a force unwrap reached a release build. Implicitly unwrapped optionals in a type position are exempt (the ObjC bridge writes `Selector!` for us) and `SmokeTest.swift` is exempt from the stderr rule, printing being its interface. Verified to fire on a planted violation of each and to stay silent on `!=` and `!flag`. Total runtime is unchanged at about 70 ms.
+
+**Docs the audit did not scan.** The audit read AGENTS.md, DEVELOPING.md, and CHANGELOG.md but not [README.md](README.md), which [AboutView](Sources/StoryStamper/Views/AboutView.swift) points every user to. It had drifted on the vocabulary this audit settled — *Choose Video* for the button now reading **Open Video**, *Add Text Block* for **Add Block**, "cancelled" against the app's own American spelling — and described the scratch sweep as happening at quit, when quitting renames and the next launch sweeps. DEVELOPING.md's architecture map was missing five files that exist (`ExportResolution`, `SheetChrome`, `HoverLabel`, `FocusHaloModifier`, `Announcement`). Both corrected.
+
 ### Reversed after review, 1.9.1
 
 **H3 (ellipses) is withdrawn.** Ellipses were added on every command that opens a panel, and removed again: five of this app's dozen commands take one, and the result read as noise. **This is now a deliberate house convention, recorded in DEVELOPING.md — do not re-raise it.** The one remaining ellipsis, `"Finishing up…"` in the export sheet, is a progress string rather than a command label and stays.
@@ -517,9 +533,9 @@ Each is one line or a few, low risk, no design decision required.
 
 **How to work this list:** build and install (`./Scripts/make-app.sh --install`), then take these one at a time, in order — the checks are grouped so a single sitting covers each group. Record the answer inline as **CONFIRMED** or the change it prompted, and delete the item. When the list is empty and every other section is closed, delete this file and cut 2.0.0.
 
-Current as of **1.9.1**.
+Current as of **1.9.2**.
 
-### Group A — changed in 1.9.0/1.9.1 and never seen
+### Group A — changed in 1.9.0/1.9.1/1.9.2 and never seen
 
 These are new. They are the most likely to be wrong, because they were written and shipped without anyone looking at them.
 
@@ -529,20 +545,21 @@ These are new. They are the most likely to be wrong, because they were written a
 4. **The padding hint reads `Instagram native padding: 20`.** The number is a button, underlined and tinted. Check the colon-space-number spacing looks deliberate rather than like a missing word.
 5. **Sheet title weight.** All four sheet titles are now uniformly `.appTitle` (16 pt), which made **Export Complete** and the failure heading 3 pt *larger* than in 1.8.x. If that reads too heavy for a status sheet, it is one line in [`SheetChrome.swift`](Sources/StoryStamper/Views/Components/SheetChrome.swift). *This is a decision made on your behalf — it needs your yes or no.*
 6. **The splitter's focus halo.** New in 1.9.0. Tab to the divider between the preview and the style sidebar: the halo is drawn around a 1 pt divider rather than a solid control, which is the one place `focusHalo` is used on something with no body of its own. Then check the arrow keys resize it.
+7. **The About sheet's repository line.** 1.9.2. *"Full details are in the README:"* and the link were an `HStack` that split the width between them, leaving the sentence wrapped short with the link crowded beside it. The sentence now takes a full-width line of its own with the link on the line below at `Spacing.hair`. Check the two lines read as one unit rather than as two unrelated rows, and that the gap is not so tight the link looks like part of the sentence.
 
 ### Group B — pre-existing, still unverified
 
-7. **Safe-area guide contrast.** `Opacity.wash` (0.25 black) over bright footage — are the zones legible without obscuring the frame?
-8. **The X button over light footage.** `Opacity.scrim` backing with a white glyph; fine over dark video, unverified over bright.
-9. **`.tertiary` version label** in the left footer — readable in both Light and Dark? It is the app's only `.tertiary`, and that is deliberate (see the ramp note in DEVELOPING.md), not drift.
-10. **Drop-prompt rhythm** (V4) — the four elements sit at a uniform `Spacing.large`. Does the title/subtitle pair want to be tighter than the gap to the button?
-11. **`GlyphPicker` captions at minimum sidebar width.** Rewritten in 1.8.3 to center on the selected segment with a clamp. Confirm *"Monospace"* and *"System"* neither clip nor sit visibly off-center at 260 pt.
-12. **Hover-label placement near pane edges.** `HoverLabel` defaults to `.top` with a `.bottom` escape hatch. The filename row in the left sidebar sits near the top of its pane and does not pass `.bottom` — does its label get clipped?
+8. **Safe-area guide contrast.** `Opacity.wash` (0.25 black) over bright footage — are the zones legible without obscuring the frame?
+9. **The X button over light footage.** `Opacity.scrim` backing with a white glyph; fine over dark video, unverified over bright.
+10. **`.tertiary` version label** in the left footer — readable in both Light and Dark? It is the app's only `.tertiary`, and that is deliberate (see the ramp note in DEVELOPING.md), not drift.
+11. **Drop-prompt rhythm** (V4) — the four elements sit at a uniform `Spacing.large`. Does the title/subtitle pair want to be tighter than the gap to the button?
+12. **`GlyphPicker` captions at minimum sidebar width.** Rewritten in 1.8.3 to center on the selected segment with a clamp. Confirm *"Monospace"* and *"System"* neither clip nor sit visibly off-center at 260 pt.
+13. **Hover-label placement near pane edges.** `HoverLabel` defaults to `.top` with a `.bottom` escape hatch. The filename row in the left sidebar sits near the top of its pane and does not pass `.bottom` — does its label get clipped?
 
 ### Group C — needs a real assistive-technology session
 
-13. **VoiceOver end to end.** Structural findings only so far. Worth a real session now that 1.9.0 added announcements: check rotor navigation order, that the export progress reads its percentage and estimate, that completion and failure are actually announced, and that the splitter is reachable and adjustable.
-14. **Light and Dark.** No `colorScheme` conditionals exist anywhere — both modes rest entirely on system semantics, which is the right approach. Whether every surface lands well in both is unverified, and the Theme picker makes it a fast pass.
+14. **VoiceOver end to end.** Structural findings only so far. Worth a real session now that 1.9.0 added announcements: check rotor navigation order, that the export progress reads its percentage and estimate, that completion and failure are actually announced, and that the splitter is reachable and adjustable.
+15. **Light and Dark.** No `colorScheme` conditionals exist anywhere — both modes rest entirely on system semantics, which is the right approach. Whether every surface lands well in both is unverified, and the Theme picker makes it a fast pass.
 
 ---
 
@@ -550,10 +567,10 @@ These are new. They are the most likely to be wrong, because they were written a
 
 ## Closing note — what 2.0.0 still needs
 
-Two items are deliberately *not* fixed, because both are yours to decide rather than mine:
+**§19, and nothing else.** Every finding in sections 3 through 18 is closed: fixed, or closed as intentional with the reasoning moved into DEVELOPING.md where it will be read. H4 was the last of the judgment calls and it is written up under *Closed from source, 1.9.2* above — the alert stays, and DEVELOPING.md says why.
 
-**H4 — `NSAlert` for quitting, sheets for everything else.** The constraint is real: `windowShouldClose` must answer synchronously, and a SwiftUI sheet cannot. Keeping the alert is defensible and it is what 1.9.0 does. Replacing it means deferring termination and driving a sheet, which is materially more complex for a visual gain only you can weigh.
+Fifteen items need eyes on a running build. Seven of them are things two releases changed without anyone looking, which makes them the likeliest to be wrong; §19 puts those first. Two are decisions made on the owner's behalf and marked as such — the sheet-title weight and the About sheet's link row — and either is one line to reverse.
 
-**The §19 list.** Nine things needing eyes on a running build. Item 1 was decided for you — sheet titles are now uniformly `.appTitle`, which makes the Export and Failure headings 3 points larger than before. If that reads too heavy for a status sheet, the fix is one line in `SheetChrome.swift`, and the right answer is the one you see.
+**When §19 is empty, delete this file and cut 2.0.0.** That is the whole remaining condition.
 
-*Findings: 6 high, 12 medium, 12 low, 4 systemic roots. All but H4 closed in 1.9.0. Build clean, style gate passing, both smoke fixtures green.*
+*Findings: 6 high, 12 medium, 12 low, 4 systemic roots — all closed from source as of 1.9.2. Build clean, style gate passing, both smoke fixtures green and upright.*

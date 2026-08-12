@@ -2,6 +2,16 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.9.2 — 2026-08-12
+
+The last of the consistency audit that could be settled without looking at the running app. Almost none of this is visible; the point of it is that the next change cannot quietly undo the previous ones.
+
+- **The About box's repository line is one sentence on its own line, with the link below it.** The two used to share a row, which left the sentence wrapping short and the link crowded against it.
+- **The style checker now enforces two rules the docs had only stated.** No force unwraps and no debug writes to stderr, across all of the source rather than just the views. A debug write carrying a force unwrap shipped in a release build once; both rules were already written down and neither was checked. It still runs in about 70 milliseconds.
+- **Quitting keeps its alert, and now says why.** Everything else the app tells you is a sheet, and a reader was entitled to think the quit prompt was drift. It is not: the close has to be vetoed synchronously and a sheet cannot answer in time. The reasoning lives in DEVELOPING.md and beside the code that makes the "one place a failure is shown" claim, rather than in a chat log.
+- The README had gone stale against the app's own vocabulary—it still said Choose Video and Add Text Block, spelled "cancelled" the British way, and described the temporary-file sweep happening at quit when quitting only moves it aside. The file map in DEVELOPING.md was missing five files that exist.
+- Two design-system doc comments were fixed rather than their values: `.appRegularBold` no longer claims sheet titles, which is the ambiguity that made two of the four sheets three points smaller than the others. The preview's two inset scales now record why they differ.
+
 ## 1.9.1 — 2026-08-12
 
 - **The style sidebar scrolls while it is greyed out.** With no video loaded the whole panel was disabled, and disabling a form disables its scroll view along with its controls—so at a short window you could see there was more below and had no way to reach it. The controls are now greyed section by section, and the panel scrolls either way.

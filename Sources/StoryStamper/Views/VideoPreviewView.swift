@@ -117,6 +117,10 @@ struct VideoPreviewView: View {
                 }
             }
         }
+        // The content inset. The drop-target ring is deliberately tighter
+        // (`Spacing.small`), because it marks the pane that accepts the file
+        // rather than the canvas inside it—so it reads as sitting outside the
+        // content, not as a second frame around it.
         .padding(Spacing.medium)
     }
 
