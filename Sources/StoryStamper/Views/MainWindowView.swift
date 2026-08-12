@@ -2,47 +2,48 @@ import SwiftUI
 
 struct MainWindowView: View {
     @Bindable private var project = StoryProject.shared
+    /// The window's undo manager. Only a view can see it, so this is where it
+    /// is handed to the project, which is where the edits happen.
+    @Environment(\.undoManager) private var undoManager
 
-    private var exportSheetVisible: Binding<Bool> {
+    /// One sheet slot for the export and for failures alike. Two `.sheet`
+    /// modifiers on one view contend for the same presentation—and beyond
+    /// that, an export that fails should turn into the reason in place,
+    /// rather than dismissing one sheet and racing another onto the screen.
+    private var modalVisible: Binding<Bool> {
         Binding(
-            get: { project.exportPhase != .idle },
+            get: { project.failure != nil || project.exportPhase != .idle },
             set: { visible in
                 if !visible {
+                    project.failure = nil
                     project.finishExport()
                 }
             }
         )
     }
 
-    private var confirmation: Binding<ConfirmationRequest?> {
-        Binding(
-            get: { project.pendingConfirmation },
-            set: { if $0 == nil { project.cancelConfirmation() } }
-        )
-    }
-
     var body: some View {
         panes
-            .sheet(isPresented: exportSheetVisible) {
-                ExportStatusView(project: project)
+            .sheet(isPresented: modalVisible) {
+                modalContent
                     .interactiveDismissDisabled(project.isExporting)
             }
-            .alert(
-                project.loadError?.alertTitle ?? "Could Not Load Video",
-                isPresented: Binding(
-                    get: { project.loadError != nil },
-                    set: { if !$0 { project.loadError = nil } }
-                )
-            ) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(project.loadError?.localizedDescription ?? "")
+            .onChange(of: undoManager, initial: true) { _, manager in
+                project.undoManager = manager
             }
     }
 
-    /// The confirmation sheet hangs off the inner container rather than
-    /// alongside the export sheet, because two `.sheet` modifiers on one view
-    /// contend for the same presentation slot.
+    @ViewBuilder
+    private var modalContent: some View {
+        // Failure wins: it is only ever set as an export leaves the running
+        // state, so the sheet already on screen is the one to replace.
+        if let failure = project.failure {
+            FailureSheet(failure: failure) { project.failure = nil }
+        } else {
+            ExportStatusView(project: project)
+        }
+    }
+
     private var panes: some View {
         HStack(spacing: 0) {
             SourceSidebarView(project: project)
@@ -57,12 +58,5 @@ struct MainWindowView: View {
             StyleSidebarView(project: project)
         }
         .frame(minWidth: Metrics.minWindowWidth, minHeight: Metrics.minWindowHeight)
-        .sheet(item: confirmation) { request in
-            ConfirmationSheet(
-                request: request,
-                onCancel: { project.cancelConfirmation() },
-                onConfirm: { suppress in project.resolveConfirmation(suppressFuture: suppress) }
-            )
-        }
     }
 }

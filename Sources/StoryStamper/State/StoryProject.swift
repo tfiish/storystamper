@@ -21,12 +21,15 @@ final class StoryProject {
     let player = AVPlayer()
     private(set) var isPlaying = false
     private(set) var currentTime: Double = 0
-    var loadError: VideoInfo.ProbeError?
+
+    /// The one thing that went wrong, waiting to be shown. Loading and
+    /// exporting both land here—see `StoryFailure`.
+    var failure: StoryFailure?
 
     // MARK: - Text blocks
 
     var blocks: [OverlayBlock] {
-        didSet { handleBlocksChange() }
+        didSet { handleBlocksChange(from: oldValue) }
     }
 
     /// Index of the block the controls panel edits. Read through
@@ -41,10 +44,6 @@ final class StoryProject {
 
     var showSafeArea = SettingsStore.loadShowSafeArea() {
         didSet { SettingsStore.save(showSafeArea: showSafeArea) }
-    }
-
-    var confirmDestructiveActions = SettingsStore.loadConfirmDestructive() {
-        didSet { SettingsStore.save(confirmDestructive: confirmDestructiveActions) }
     }
 
     var appearance = SettingsStore.loadAppearance() {
@@ -65,9 +64,6 @@ final class StoryProject {
     func persistStyleSidebarWidth() {
         SettingsStore.save(styleSidebarWidth: styleSidebarWidth)
     }
-
-    /// The destructive action waiting on a confirmation sheet, if any.
-    var pendingConfirmation: ConfirmationRequest?
 
     /// Which informational sheet is showing, if any.
     var infoSheet: InfoSheet?
@@ -121,6 +117,151 @@ final class StoryProject {
         }
     }
 
+    /// Undoes what `init` set up. Nothing leaks today, because the app holds
+    /// one shared project for its whole life—but that is a fact about the app,
+    /// not about this class, and an object that only behaves while it is never
+    /// released is a trap laid for the next caller.
+    ///
+    /// `isolated deinit` is what makes this possible: the class is
+    /// `@MainActor`, and an ordinary deinit is nonisolated, so it could not
+    /// touch the player or the task table at all.
+    isolated deinit {
+        if let timeObserver {
+            player.removeTimeObserver(timeObserver)
+        }
+        if let endObserver {
+            NotificationCenter.default.removeObserver(endObserver)
+        }
+        cancelRenders()
+        undoGroupCloser?.cancel()
+        exportTask?.cancel()
+        loadTask?.cancel()
+    }
+
+    // MARK: - Undo
+
+    /// The window's undo manager, handed over by `MainWindowView`, which is
+    /// where `@Environment(\.undoManager)` can see it. Not observed: nothing
+    /// on screen is drawn from it.
+    @ObservationIgnored weak var undoManager: UndoManager?
+
+    /// A burst of edits of one kind on one block is a single undo step, so
+    /// dragging the Size slider is one Command-Z rather than ninety.
+    private enum UndoGroup: Equatable {
+        case style(UUID)
+        case placement(UUID)
+    }
+
+    private var openUndoGroup: UndoGroup?
+    private var undoGroupCloser: Task<Void, Never>?
+    /// True while an undo or a redo is being applied, so putting state back
+    /// does not register itself as a fresh edit.
+    private var isRestoring = false
+
+    /// Everything an undo step has to put back. A value type, so holding one
+    /// cannot keep a half-torn-down player or render alive.
+    private struct Snapshot: Sendable {
+        let video: VideoInfo?
+        let blocks: [OverlayBlock]
+        let selectedIndex: Int
+    }
+
+    private func currentSnapshot() -> Snapshot {
+        Snapshot(video: video, blocks: blocks, selectedIndex: selectedIndex)
+    }
+
+    /// Names the current state and puts it on the stack, for an action that is
+    /// about to change it.
+    private func registerUndo(_ actionName: String) {
+        guard !isRestoring else { return }
+        closeUndoGroup()
+        pushUndo(actionName, snapshot: currentSnapshot())
+    }
+
+    /// Registering an undo *while undoing* is what gives us redo: AppKit puts
+    /// anything registered during an undo onto the redo stack instead, so one
+    /// mutually recursive registration covers both directions.
+    private func pushUndo(_ actionName: String, snapshot: Snapshot) {
+        guard let undoManager else { return }
+        undoManager.setActionName(actionName)
+        undoManager.registerUndo(withTarget: self) { project in
+            MainActor.assumeIsolated {
+                let inverse = project.currentSnapshot()
+                project.restore(snapshot)
+                project.pushUndo(actionName, snapshot: inverse)
+            }
+        }
+    }
+
+    private func restore(_ snapshot: Snapshot) {
+        isRestoring = true
+        defer { isRestoring = false }
+        closeUndoGroup()
+
+        if snapshot.video?.url != video?.url {
+            if let restored = snapshot.video {
+                adopt(restored)
+            } else {
+                clearVideo()
+            }
+        }
+        // Assigning `blocks` re-renders through `handleBlocksChange`, so the
+        // preview catches up without a second pass here.
+        blocks = snapshot.blocks
+        selectedIndex = min(max(snapshot.selectedIndex, 0), blocks.count - 1)
+    }
+
+    /// Classifies what an edit actually changed, so the right thing lands on
+    /// the stack. Structural changes register themselves at the call site,
+    /// where the action has a name; typing is deliberately left alone, because
+    /// the text editor keeps its own undo and two stacks over one field is
+    /// worse than one.
+    private func registerUndoForEdit(from oldBlocks: [OverlayBlock]) {
+        guard !isRestoring, undoManager != nil else { return }
+        // Identity, not just count: clearing a video also swaps the single
+        // block for a fresh one, and that step is registered by its own name.
+        guard oldBlocks.map(\.id) == blocks.map(\.id) else { return }
+
+        var group: UndoGroup?
+        var actionName = ""
+        for (old, new) in zip(oldBlocks, blocks) where old != new {
+            if old.style != new.style {
+                group = .style(new.id)
+                actionName = "Text Style"
+            } else if old.center != new.center {
+                group = .placement(new.id)
+                actionName = "Move Text Block"
+            } else {
+                closeUndoGroup()
+                return
+            }
+        }
+
+        guard let group else { return }
+        if openUndoGroup != group {
+            pushUndo(actionName, snapshot: Snapshot(video: video, blocks: oldBlocks, selectedIndex: selectedIndex))
+            openUndoGroup = group
+        }
+        scheduleUndoGroupClose()
+    }
+
+    /// A group stays open until the edits stop. Restarting the timer per edit
+    /// mirrors `scheduleRender`, and costs the same: one task, replaced.
+    private func scheduleUndoGroupClose() {
+        undoGroupCloser?.cancel()
+        undoGroupCloser = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Motion.undoCoalesce))
+            guard !Task.isCancelled else { return }
+            self?.openUndoGroup = nil
+        }
+    }
+
+    private func closeUndoGroup() {
+        undoGroupCloser?.cancel()
+        undoGroupCloser = nil
+        openUndoGroup = nil
+    }
+
     // MARK: - Block management
 
     private var safeSelectedIndex: Int {
@@ -150,6 +291,7 @@ final class StoryProject {
     /// whichever third of the frame sits farthest from the existing blocks.
     func addBlock() {
         guard canAddBlock else { return }
+        registerUndo("Add Text Block")
         let slots: [Double] = [0.2, 0.5, 0.8]
         let taken = blocks.map(\.center.y)
         let distance: (Double) -> Double = { slot in
@@ -162,6 +304,7 @@ final class StoryProject {
 
     private func removeSelectedBlock() {
         guard blocks.count > 1 else { return }
+        registerUndo("Remove Text Block")
         blocks.remove(at: safeSelectedIndex)
         selectedIndex = 0
     }
@@ -181,7 +324,8 @@ final class StoryProject {
         )
     }
 
-    private func handleBlocksChange() {
+    private func handleBlocksChange(from oldBlocks: [OverlayBlock]) {
+        registerUndoForEdit(from: oldBlocks)
         refreshOverlays()
         persistSelectedStyle()
     }
@@ -267,44 +411,23 @@ final class StoryProject {
     // MARK: - Destructive actions
 
     /// Every path that discards a video or a block goes through one of these
-    /// two requests, so the confirmation cannot be bypassed by adding a caller.
+    /// two requests, and the private half of each is where the undo step is
+    /// registered. That is why `clearVideo` and `removeSelectedBlock` stay
+    /// private: a caller reaching past them would throw away typed text with
+    /// no way back.
     ///
-    /// The setting is the only thing that decides whether to ask. An earlier
-    /// version also skipped the prompt when nothing had been typed yet, which
-    /// meant the X cleared a loaded video outright—not what a setting called
-    /// "Confirm before deletion" promises.
+    /// There is no confirmation prompt any more, and deliberately so. A
+    /// warning and an undo stack are two answers to the same question, and the
+    /// prompt was the worse one—it charged a click on the app's most common
+    /// path for a mistake that Command-Z now takes back completely.
     func requestClearVideo() {
         guard video != nil else { return }
-        guard confirmDestructiveActions else {
-            clearVideo()
-            return
-        }
-        pendingConfirmation = ConfirmationRequest(action: .clearVideo(hasText: hasStoryText))
+        clearVideo()
     }
 
     func requestRemoveSelectedBlock() {
         guard blocks.count > 1 else { return }
-        guard confirmDestructiveActions else {
-            removeSelectedBlock()
-            return
-        }
-        pendingConfirmation = ConfirmationRequest(action: .removeBlock)
-    }
-
-    func cancelConfirmation() {
-        pendingConfirmation = nil
-    }
-
-    func resolveConfirmation(suppressFuture: Bool) {
-        guard let request = pendingConfirmation else { return }
-        pendingConfirmation = nil
-        if suppressFuture {
-            confirmDestructiveActions = false
-        }
-        switch request.action {
-        case .clearVideo: clearVideo()
-        case .removeBlock: removeSelectedBlock()
-        }
+        removeSelectedBlock()
     }
 
     // MARK: - Loading
@@ -324,7 +447,7 @@ final class StoryProject {
 
     func loadVideo(from url: URL) {
         guard Self.isAcceptableVideo(url: url) else {
-            loadError = .unsupportedType
+            failure = StoryFailure(loading: .unsupportedType)
             return
         }
         loadTask?.cancel()
@@ -334,20 +457,28 @@ final class StoryProject {
                 // A second drop landing while this probe ran wins; this one
                 // must not overwrite it on the way out.
                 try Task.checkCancellation()
-                video = info
-                player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: url)))
-                currentTime = 0
-                isPlaying = false
-                installLoopObserver()
-                refreshOverlays()
+                adopt(info)
             } catch is CancellationError {
                 // Superseded by a newer load; leave the newer one alone.
             } catch let error as VideoInfo.ProbeError {
-                loadError = error
+                failure = StoryFailure(loading: error)
             } catch {
-                loadError = .unreadable(error.localizedDescription)
+                failure = StoryFailure(loading: .unreadable(error.localizedDescription))
             }
         }
+    }
+
+    /// Takes on an already probed video. Undoing a clear comes back through
+    /// here rather than through `loadVideo`, because the probe's answer is
+    /// state we still hold—making the user wait for it again would be work
+    /// done twice for a result that cannot have changed.
+    private func adopt(_ info: VideoInfo) {
+        pause()
+        video = info
+        player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: info.url)))
+        currentTime = 0
+        installLoopObserver()
+        refreshOverlays()
     }
 
     static func isAcceptableVideo(url: URL) -> Bool {
@@ -358,6 +489,7 @@ final class StoryProject {
     /// text back to a single empty block. Styling carries over, since those
     /// settings are meant to persist.
     private func clearVideo() {
+        registerUndo("Clear Video")
         pause()
         loadTask?.cancel()
         loadTask = nil
@@ -467,7 +599,10 @@ final class StoryProject {
             } catch is CancellationError {
                 exportPhase = .idle
             } catch {
-                exportPhase = .failed(error.localizedDescription)
+                // The sheet showing progress becomes the sheet showing why it
+                // stopped, in place—see `MainWindowView`.
+                exportPhase = .idle
+                failure = StoryFailure(exporting: error)
             }
             exportTask = nil
         }

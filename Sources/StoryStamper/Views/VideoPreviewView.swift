@@ -295,15 +295,13 @@ private struct CenterGuides: View {
 /// only—never part of the export.
 private struct SafeAreaGuides: View {
     let videoRect: CGRect
-    private let topFraction: CGFloat = 0.13
-    private let bottomFraction: CGFloat = 0.16
 
     var body: some View {
         ZStack(alignment: .topLeading) {
-            zone(height: videoRect.height * topFraction, edge: .top)
+            zone(height: videoRect.height * Instagram.topSafeFraction, edge: .top)
                 .offset(x: videoRect.minX, y: videoRect.minY)
-            zone(height: videoRect.height * bottomFraction, edge: .bottom)
-                .offset(x: videoRect.minX, y: videoRect.maxY - videoRect.height * bottomFraction)
+            zone(height: videoRect.height * Instagram.bottomSafeFraction, edge: .bottom)
+                .offset(x: videoRect.minX, y: videoRect.maxY - videoRect.height * Instagram.bottomSafeFraction)
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)

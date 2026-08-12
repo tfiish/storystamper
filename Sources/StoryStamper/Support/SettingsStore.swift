@@ -6,7 +6,6 @@ import Foundation
 enum SettingsStore {
     private static let styleKey = "overlayStyle.v1"
     private static let safeAreaKey = "showSafeArea.v1"
-    private static let confirmDestructiveKey = "confirmDestructive.v1"
     private static let appearanceKey = "appearance.v1"
     private static let styleSidebarWidthKey = "styleSidebarWidth.v1"
     private static let exportResolutionKey = "exportResolution.v1"
@@ -31,16 +30,6 @@ enum SettingsStore {
 
     static func save(showSafeArea: Bool) {
         UserDefaults.standard.set(showSafeArea, forKey: safeAreaKey)
-    }
-
-    /// Whether destructive actions ask first. Turned off by the "Don't ask me
-    /// again" checkbox, and turned back on from Settings.
-    static func loadConfirmDestructive() -> Bool {
-        UserDefaults.standard.object(forKey: confirmDestructiveKey) as? Bool ?? true
-    }
-
-    static func save(confirmDestructive: Bool) {
-        UserDefaults.standard.set(confirmDestructive, forKey: confirmDestructiveKey)
     }
 
     static func loadAppearance() -> AppearanceChoice {

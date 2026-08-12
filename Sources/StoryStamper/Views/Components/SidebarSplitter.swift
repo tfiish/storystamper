@@ -13,15 +13,11 @@ struct SidebarSplitter: View {
 
     @State private var widthAtDragStart: CGFloat?
 
-    /// Wider than the hairline so the drag target is reachable without
-    /// pixel-hunting, which is the usual complaint about hand-rolled splitters.
-    private let hitWidth: CGFloat = 8
-
     var body: some View {
         Divider()
             .overlay {
                 Color.clear
-                    .frame(width: hitWidth)
+                    .frame(width: Metrics.splitterHitWidth)
                     .contentShape(Rectangle())
                     .onHover { inside in
                         if inside {

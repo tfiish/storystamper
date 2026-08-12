@@ -2,6 +2,15 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.8.2 — 2026-08-12
+
+- **Undo, at last.** Command-Z takes back clearing a video, adding or removing a text block, a style change, and a move—whether you moved the block by dragging it or with the arrow keys. Command-Shift-Z puts it back. The Edit menu names the step, so it reads "Undo Move Text Block" rather than a greyed-out word. One continuous slider drag is one undo, not ninety, and undoing a cleared video restores the clip without re-reading it from disk.
+- **The confirmation prompt is gone, and deliberately.** A warning and an undo stack are two answers to the same question, and the warning was the worse one: it charged a click on the app's most common path—clearing a clip to start the next one—for a mistake Command-Z now takes back completely. The Confirm before deletion setting has gone with it. Quitting still asks, because quitting is the one thing undo cannot reach.
+- **One error, one place, always selectable.** A file that would not load opened an alert; an export that failed opened a sheet, and only the sheet let you select the text—backwards, given FFmpeg's messages are the ones people paste into a bug report. Both now come up as the same sheet, and you can select all of it. A failed export turns into that sheet in place rather than dismissing one and opening another.
+- **Command-W no longer leaves the app running with no window.** Closing the last window quits this app, so it asks the same question Command-Q does—but AppKit closed the window before asking, and declining left nothing on screen. The question now comes first, and declining leaves the window exactly where it was. Command-Q still only asks once.
+- Under the hood: `Scripts/check-style.sh` enforces the rule the design system only used to state—no raw numbers in a view, covering color alpha, motion, and stroke patterns as well as geometry. It runs before every release build and takes about 40 ms. Two literals it found have moved into named tokens.
+- Under the hood: `StoryProject` now removes its playback observers and cancels its outstanding work when it goes away. Nothing leaked, because the app holds exactly one for its whole life—but that was a fact about the app rather than about the class.
+
 ## 1.8.1 — 2026-08-12
 
 - The monospaced font is now called Monospace, and the names under the Font, Alignment, and Theme pickers no longer run past the edge of the control and get clipped. The first and last names grow inward from their edge rather than centering past it.

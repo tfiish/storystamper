@@ -29,4 +29,16 @@ enum ExportError: LocalizedError {
             return "The video encoded, but could not be saved to that location: \(detail)"
         }
     }
+
+    /// Sentence-case title for the sheet that presents this failure. Only the
+    /// missing binary earns its own: it is the one failure here that is about
+    /// the machine rather than about this export.
+    var failureTitle: String {
+        switch self {
+        case .ffmpegNotFound:
+            return "FFmpeg Not Found"
+        case .overlayRenderFailed, .ffmpegFailed, .wouldOverwriteSource, .couldNotSaveOutput, .nothingToStamp:
+            return "Export Failed"
+        }
+    }
 }

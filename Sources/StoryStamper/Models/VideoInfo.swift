@@ -47,8 +47,8 @@ struct VideoInfo: Sendable {
             }
         }
 
-        /// Sentence-case title for the alert that presents this error.
-        var alertTitle: String {
+        /// Sentence-case title for the sheet that presents this failure.
+        var failureTitle: String {
             switch self {
             case .unsupportedType:
                 return "Unsupported File Type"

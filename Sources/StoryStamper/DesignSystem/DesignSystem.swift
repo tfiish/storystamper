@@ -109,6 +109,30 @@ enum Motion {
     static let tooltipDelay: Double = 0.25
     /// Interpolation between FFmpeg's twice-a-second progress reports.
     static let progress: Double = 0.6
+    /// How long a burst of edits of one kind stays a single undo step. Long
+    /// enough that one slider drag is one Command-Z; short enough that two
+    /// deliberate adjustments are two.
+    static let undoCoalesce: Double = 0.75
+    /// How often the export sheet's remaining-time estimate is recomputed
+    /// between FFmpeg's progress reports.
+    static let clock: Double = 1
+}
+
+// MARK: - Instagram
+
+/// Numbers that describe Instagram rather than this app: where its interface
+/// covers a Story, and what padding it puts around Story text. They live here
+/// for the same reason everything else does—so no view carries a raw value—
+/// and they are the only entries here that would change because somebody else
+/// redesigned something.
+enum Instagram {
+    /// Fraction of the frame's height that Instagram's own UI covers. Drawn
+    /// as guides only, never part of an export.
+    static let topSafeFraction: CGFloat = 0.13
+    static let bottomSafeFraction: CGFloat = 0.16
+    /// Roughly the padding Instagram puts around Story text, in the same
+    /// 1080-wide reference units the padding slider uses.
+    static let textPadding: Double = 20
 }
 
 // MARK: - Icons
@@ -181,6 +205,9 @@ enum Metrics {
     static let overlayButton: CGFloat = 24
     /// One segment of a glyph picker, matching a small segmented control.
     static let segmentHeight: CGFloat = 22
+    /// Grab area straddling the sidebar splitter. Wider than the hairline it
+    /// sits on, so the drag is reachable without pixel-hunting.
+    static let splitterHitWidth: CGFloat = 8
     /// The line under a glyph picker naming the current choice. Fixed, so the
     /// row does not change height as the name changes.
     static let captionHeight: CGFloat = 14

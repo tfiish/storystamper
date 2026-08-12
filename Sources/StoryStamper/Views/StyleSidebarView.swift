@@ -7,10 +7,6 @@ struct StyleSidebarView: View {
     @FocusState private var textEditorFocused: Bool
     @FocusState private var paddingHintFocused: Bool
 
-    /// Roughly what Instagram puts around Story text, in the same 1080-wide
-    /// reference units the padding slider uses.
-    private static let instagramPadding: Double = 20
-
     var body: some View {
         VStack(spacing: 0) {
             Form {
@@ -166,9 +162,9 @@ struct StyleSidebarView: View {
         HStack(spacing: 0) {
             Text("Instagram's native padding is approximately ")
             Button {
-                project.selectedBlock.style.padding = Self.instagramPadding
+                project.selectedBlock.style.padding = Instagram.textPadding
             } label: {
-                Text("\(Int(Self.instagramPadding))")
+                Text("\(Int(Instagram.textPadding))")
                     .underline()
             }
             .buttonStyle(.plain)
@@ -176,8 +172,8 @@ struct StyleSidebarView: View {
             .focused($paddingHintFocused)
             .focusEffectDisabled()
             .focusHalo(paddingHintFocused, shape: RoundedRectangle(cornerRadius: Radius.small))
-            .hoverLabel("Set padding to \(Int(Self.instagramPadding))")
-            .accessibilityLabel("Set padding to \(Int(Self.instagramPadding))")
+            .hoverLabel("Set padding to \(Int(Instagram.textPadding))")
+            .accessibilityLabel("Set padding to \(Int(Instagram.textPadding))")
             Text(".")
         }
         .font(.appSmall)

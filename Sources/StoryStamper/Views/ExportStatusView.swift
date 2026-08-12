@@ -1,6 +1,8 @@
 import SwiftUI
 
-/// Sheet shown while an export runs, and after it finishes or fails.
+/// Sheet shown while an export runs, and after it finishes. A failed export
+/// leaves this view entirely and comes back as a `FailureSheet`, so there is
+/// one place errors are presented rather than one per subsystem.
 struct ExportStatusView: View {
     @Bindable var project: StoryProject
 
@@ -32,24 +34,6 @@ struct ExportStatusView: View {
                     }
                     .keyboardShortcut(.defaultAction)
                 }
-
-            case .failed(let message):
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: IconSize.status))
-                    .foregroundStyle(.red)
-                    .accessibilityHidden(true)
-                Text("Export Failed")
-                    .font(.appRegularBold)
-                Text(message)
-                    .font(.appRegular)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: Metrics.sheetTextWidth)
-                    .textSelection(.enabled)
-                Button("Close") {
-                    project.finishExport()
-                }
-                .keyboardShortcut(.defaultAction)
             }
         }
         .padding(Spacing.xLarge)
@@ -66,7 +50,7 @@ private struct ExportProgressView: View {
     /// Ticks once a second purely so the remaining-time estimate stays fresh
     /// between FFmpeg's progress updates.
     @State private var now = Date()
-    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let clock = Timer.publish(every: Motion.clock, on: .main, in: .common).autoconnect()
 
     var body: some View {
         // A VStack rather than a Group, because modifiers on a Group are

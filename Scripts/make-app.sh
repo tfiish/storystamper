@@ -12,6 +12,10 @@ if [ "${1:-}" = "--install" ]; then
     INSTALL=true
 fi
 
+# Before the compiler, because a design-system violation is cheaper to hear
+# about in a second than after a release build.
+./Scripts/check-style.sh
+
 swift build -c release
 
 APP="build/StoryStamper.app"

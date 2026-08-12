@@ -30,6 +30,7 @@ When a change is a genuine trade—slower but meaningfully better—measure it f
 | Build and install to /Applications | `./Scripts/make-app.sh --install` |
 | Regenerate the icon alone | `swift Scripts/make-icon.swift out.iconset` |
 | Headless export test | `.build/debug/StoryStamper --smoke-export in.mp4 out.mp4 ["text"]` |
+| Design-system check | `./Scripts/check-style.sh` |
 
 There is no separate test target; the smoke test exercises the full probe → render → export pipeline (the same code paths the UI calls) without launching a window. If no text argument is given, it uses a string full of hostile characters—apostrophes, quotes, a percent sign, an em-dash, accents, and an emoji.
 
@@ -70,13 +71,14 @@ Sources/StoryStamper/
 │   ├── VideoInfo.swift          One-shot AVFoundation probe (rotation-aware size)
 │   ├── AppearanceChoice.swift   System, light, or dark, applied to NSApp
 │   ├── ExportPhase.swift        Where an export is in its lifecycle
-│   ├── ConfirmationRequest.swift  A destructive action awaiting confirmation
+│   ├── StoryFailure.swift       Anything that went wrong, in one shape
 │   └── InfoSheet.swift          Which of About or Settings is showing
 ├── State/
 │   └── StoryProject.swift       @Observable source of truth: video, playback,
 │                                text blocks (up to three), selection, and export
 ├── Support/
 │   ├── SettingsStore.swift      UserDefaults persistence for preferences
+│   ├── WindowCloseGuard.swift   Vetoes a window close, forwarding the rest
 │   └── AppInfo.swift            Display name, version, and repository URL
 ├── Rendering/
 │   └── OverlayRenderer.swift    Core Graphics text-block raster + placement math
@@ -86,14 +88,14 @@ Sources/StoryStamper/
 │   ├── ExportError.swift        Every way an export can fail
 │   └── ExportScratch.swift      The one scratch root, swept at launch and quit
 └── Views/
-    ├── MainWindowView.swift     Three-column layout, export sheet, error alert
+    ├── MainWindowView.swift     Three-column layout, the one sheet slot
     ├── StoryCommands.swift      The menu bar
     ├── SourceSidebarView.swift  Left: video, preview guides, theme, About, version
     ├── VideoPreviewView.swift   Center: preview canvas, drag, arrow keys, transport
     ├── PlayerLayerView.swift    Bare AVPlayerLayer host (exact geometry, no chrome)
     ├── StyleSidebarView.swift   Right: story text, text style, background, export
-    ├── ExportStatusView.swift   Progress, completion, and failure sheet
-    ├── ConfirmationSheet.swift  Destructive confirmation, with "Don't ask again"
+    ├── ExportStatusView.swift   Export progress and completion sheet
+    ├── FailureSheet.swift       The one error presentation, selectable
     ├── SettingsView.swift       The preferences sheet
     ├── AboutView.swift          What the app is for, with a repository link
     └── Components/              Shared UI. Reach for one of these before writing
@@ -120,7 +122,9 @@ Sources/StoryStamper/
 - **Exports default to the Story frame.** `ExportResolution.story` fits the narrow side to 1080 and never upscales. On the 4K fixture this is 40 MB in 16 s against 99 MB in 21 s, for a destination that serves 1080 × 1920 either way. `.source` remains available in Settings.
 - **Export prefers `h264_videotoolbox`.** `FFmpegService.supportsVideoToolbox` probes `ffmpeg -encoders` per export (about 30 ms) and `VideoExporter` falls back to libx264 `veryfast` when it is missing. On a 38-second 4K clip this is the difference between roughly 20 seconds and over ten minutes, so do not "simplify" it back to a single software encoder.
 - **Nothing is written to the user's chosen destination until the encode succeeds.** FFmpeg writes into `ExportScratch`, and `VideoExporter.install` moves the finished file into place. A cancel, a failure, or a quit therefore leaves no truncated MP4 behind. Do not "simplify" this by pointing FFmpeg at the destination.
-- **Destructive actions go through `requestClearVideo` and `requestRemoveSelectedBlock`.** Those are the only two paths that discard typed text, and they are where the confirmation lives. Calling `clearVideo` or `removeSelectedBlock` directly would bypass it, which is why both are private.
+- **Destructive actions go through `requestClearVideo` and `requestRemoveSelectedBlock`.** Those are the only two paths that discard typed text, and the private half of each is where the undo step is registered. Calling `clearVideo` or `removeSelectedBlock` directly would throw text away with no way back, which is why both are private. There is no confirmation prompt any more: 1.8.2 decided that a warning and an undo stack are two answers to the same question, and kept the better one. Quitting still asks, because undo does not survive it.
+- **Undo goes through `StoryProject`, not the views.** The window's undo manager arrives via `@Environment(\.undoManager)` in `MainWindowView`; everything else is registered inside the project, where the mutations are. A burst of same-kind edits on one block coalesces into a single step (`Motion.undoCoalesce`), so a slider drag is one Command-Z. Text is deliberately *not* registered—the text editor keeps its own undo, and two stacks over one field is worse than one.
+- **There is one error type and one place it appears.** Loading and exporting both produce a `StoryFailure`, shown by `FailureSheet` with the message selectable. `ExportPhase` has no failure case for this reason. Adding a second presentation is how the alert-versus-sheet split happened the first time.
 - **Progress is read with `readabilityHandler`, not `FileHandle.bytes`.** The async byte sequence buffers so aggressively that progress arrived in one late lump; the handler-based reader delivers FFmpeg's twice-a-second updates live.
 
 ## Measuring
@@ -149,7 +153,9 @@ Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist`,
 
 ## Design system
 
-Every number the interface draws with lives in [DesignSystem/DesignSystem.swift](Sources/StoryStamper/DesignSystem/DesignSystem.swift)—including color alpha, motion durations, and stroke patterns, not just geometry. Views should contain no raw layout literals; if you need a value that is not there, add it there first.
+Every number the interface draws with lives in [DesignSystem/DesignSystem.swift](Sources/StoryStamper/DesignSystem/DesignSystem.swift)—including color alpha, motion durations, and stroke patterns, not just geometry. Views contain no raw literals; if you need a value that is not there, add it there first.
+
+That is enforced rather than remembered. `./Scripts/check-style.sh` reads every file under `Views/` and fails on a numeric literal inside a call the interface draws with, after a drawing argument label, or in a locally declared `CGFloat` or `Double`. `make-app.sh` runs it before the release build, and it costs about 40 ms. The script's own header lists what it looks at, and the one thing it cannot see—a call split across lines, which is why the argument-label rule sits alongside the call rule.
 
 | Token group | Values | Use |
 | --- | --- | --- |
@@ -164,12 +170,13 @@ Every number the interface draws with lives in [DesignSystem/DesignSystem.swift]
 | `IconSize` | 9, 12, 14, 16, 26, 34, 44 | Glyphs, including font specimens |
 | `Interaction` | named | Snap tolerance and arrow-key steps |
 | `Metrics` | named | Component sizes: sidebars, swatch, readout, sheets |
+| `Instagram` | named | Where Instagram's UI covers a Story, and its text padding |
 
 Use the `Font` helpers (`.appSmall`, `.appSmallDigits`, `.appRegular`, `.appRegularBold`, `.appTitle`) rather than SwiftUI's semantic styles, whose sizes fall off the scale (`.callout` is 12 pt, `.title3` is 15 pt).
 
 Icon sizes are deliberately a separate scale from text: glyphs are balanced optically against their surroundings. A `.font(.system(size:))` on an `Image` is fine; on a `Text` it is not.
 
-The one allowed literal is `spacing: 0`, which means "no gap" structurally rather than picking a value off the scale.
+Two literals are allowed, and only two: `spacing: 0`, which means "no gap" structurally rather than picking a value off the scale, and `opacity(flag ? 1 : 0)`, which is fully on or fully off rather than an alpha. The checker knows about both, and about nothing else.
 
 ## Style rules for this repo
 
@@ -177,4 +184,5 @@ The one allowed literal is `spacing: 0`, which means "no gap" structurally rathe
 - Em-dashes sit directly between words—like this—with no surrounding spaces.
 - Comments only where behavior is non-obvious; no force unwraps.
 - Before writing a control, check `Views/Components`. A second copy of a slider row or an icon button is how the first drift starts.
+- Run `./Scripts/check-style.sh` before opening a pull request, or build the app bundle, which runs it for you.
 - Icon-only controls take a spoken label. `IconButton` and `GlyphPicker` both require one, so this is enforced rather than remembered.
