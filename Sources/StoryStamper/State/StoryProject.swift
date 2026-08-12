@@ -4,33 +4,6 @@ import Foundation
 import Observation
 import UniformTypeIdentifiers
 
-enum ExportPhase: Equatable {
-    case idle
-    case exporting(progress: Double)
-    case completed(URL)
-    case failed(String)
-}
-
-/// One text overlay: its content, its style, and its center in normalized
-/// (0...1) video coordinates.
-struct OverlayBlock: Identifiable, Equatable {
-    let id: UUID
-    var text: String
-    var style: OverlayStyle
-    var center: CGPoint
-
-    init(id: UUID = UUID(), text: String = "", style: OverlayStyle, center: CGPoint = CGPoint(x: 0.5, y: 0.5)) {
-        self.id = id
-        self.text = text
-        self.style = style
-        self.center = center
-    }
-
-    var hasText: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-}
-
 /// The single source of truth for the app: loaded video, playback state, text
 /// blocks, selection, and export lifecycle.
 @MainActor
@@ -89,6 +62,9 @@ final class StoryProject {
 
     /// The destructive action waiting on a confirmation sheet, if any.
     var pendingConfirmation: ConfirmationRequest?
+
+    /// Which informational sheet is showing, if any.
+    var infoSheet: InfoSheet?
 
     private struct CachedRender {
         let signature: Int
@@ -274,6 +250,19 @@ final class StoryProject {
     }
 
     // MARK: - Loading
+
+    /// Prompts for a video. Lives here rather than beside a view because the
+    /// drop prompt, both sidebar buttons, and the File menu all reach it.
+    func chooseVideo() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = Self.allowedContentTypes
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.title = "Choose Video"
+        if panel.runModal() == .OK, let url = panel.url {
+            loadVideo(from: url)
+        }
+    }
 
     func loadVideo(from url: URL) {
         guard Self.isAcceptableVideo(url: url) else {

@@ -16,15 +16,17 @@ enum StoryStamperMain {
 
 struct StoryStamperApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Bindable private var project = StoryProject.shared
 
     /// A single `Window` rather than a `WindowGroup`: this is a one-document
     /// utility, and a second window would fight the first over the shared
     /// style preferences.
     var body: some Scene {
         Window("Story Stamper", id: "main") {
-            ContentView()
+            MainWindowView()
         }
         .defaultSize(width: Metrics.defaultWindowWidth, height: Metrics.defaultWindowHeight)
+        .commands { StoryCommands(project: project) }
     }
 }
 

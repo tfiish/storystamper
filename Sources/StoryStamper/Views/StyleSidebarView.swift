@@ -5,6 +5,7 @@ import SwiftUI
 struct StyleSidebarView: View {
     @Bindable var project: StoryProject
     @FocusState private var textEditorFocused: Bool
+    @FocusState private var paddingHintFocused: Bool
 
     /// Roughly what Instagram puts around Story text, in the same 1080-wide
     /// reference units the padding slider uses.
@@ -18,6 +19,11 @@ struct StyleSidebarView: View {
                 backgroundSection
             }
             .formStyle(.grouped)
+            // Nothing in here means anything without a video: a block is
+            // placed against the video's frame, and no overlay renders until
+            // one is loaded. Better to grey the lot than to let someone style
+            // an overlay that does not exist.
+            .disabled(project.video == nil)
 
             exportFooter
         }
@@ -60,12 +66,6 @@ struct StyleSidebarView: View {
                 .disabled(project.blocks.count < 2)
             }
 
-            if project.video == nil {
-                Text("Load a video before adding text blocks—a block is positioned against the video's frame.")
-                    .font(.appSmall)
-                    .foregroundStyle(.secondary)
-            }
-
             Text("Drag or use arrow keys to reposition. Blocks snap to the midlines.")
                 .font(.appSmall)
                 .foregroundStyle(.secondary)
@@ -75,50 +75,40 @@ struct StyleSidebarView: View {
     private var styleSection: some View {
         Section("Text Style") {
             LabeledContent("Font") {
-                Picker("Font", selection: $project.selectedBlock.style.font) {
-                    ForEach(FontChoice.allCases) { choice in
-                        // An image, not styled text: see FontSample.
-                        FontSample.image(for: choice)
-                            .help(choice.displayName)
-                            .accessibilityLabel(choice.displayName)
-                            .tag(choice)
-                    }
+                GlyphPicker(
+                    title: "Font",
+                    selection: $project.selectedBlock.style.font,
+                    items: FontChoice.allCases,
+                    name: { $0.displayName }
+                ) { choice in
+                    FontSample.image(for: choice)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
             }
 
-            LabeledContent("Size") {
-                HStack(spacing: Spacing.small) {
-                    Slider(value: $project.selectedBlock.style.fontSize, in: 24...160)
-                        .accessibilityLabel("Text size")
-                        .accessibilityValue("\(Int(project.selectedBlock.style.fontSize))")
-                    Text("\(Int(project.selectedBlock.style.fontSize))")
-                        .font(.appSmallDigits)
-                        .frame(width: Metrics.readoutWidth, alignment: .trailing)
-                }
-            }
+            SliderRow(
+                title: "Size",
+                value: $project.selectedBlock.style.fontSize,
+                range: 24...160,
+                format: { "\(Int($0))" },
+                spokenName: "Text size"
+            )
 
             LabeledContent("Alignment") {
-                Picker("Alignment", selection: $project.selectedBlock.style.alignment) {
-                    ForEach(TextAlignmentChoice.allCases) { choice in
-                        // Label rather than a bare Image so the segment carries
-                        // a name for VoiceOver while still showing only the glyph.
-                        Label(choice.displayName, systemImage: choice.symbolName)
-                            .labelStyle(.iconOnly)
-                            .help(choice.displayName)
-                            .tag(choice)
-                    }
+                GlyphPicker(
+                    title: "Alignment",
+                    selection: $project.selectedBlock.style.alignment,
+                    items: TextAlignmentChoice.allCases,
+                    name: { $0.displayName }
+                ) { choice in
+                    Image(systemName: choice.symbolName)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
             }
 
             LabeledContent("Color") {
                 ColorRow(presets: ColorPreset.text, selection: styleBinding(\.textColor))
             }
 
-            Text("Size and padding are relative to a 1080-wide frame, so the same numbers look right on 1080p and 4K footage.")
+            Text("Style changes apply only to the selected Text Block.")
                 .font(.appSmall)
                 .foregroundStyle(.secondary)
         }
@@ -135,49 +125,27 @@ struct StyleSidebarView: View {
                     ColorRow(presets: ColorPreset.background, selection: styleBinding(\.backgroundColor))
                 }
 
-                LabeledContent("Opacity") {
-                    HStack(spacing: Spacing.small) {
-                        // 100% produces what used to be the "Solid" mode.
-                        Slider(value: $project.selectedBlock.style.backgroundOpacity, in: 0.1...1)
-                            .accessibilityLabel("Background opacity")
-                            .accessibilityValue("\(Int(project.selectedBlock.style.backgroundOpacity * 100)) percent")
-                            // The slider stops at 10% so "enabled" always
-                            // means visible; removing the box entirely is the
-                            // checkbox's job, and nothing else says so.
-                            .help("Ranges from 10% to 100%. Uncheck Text Background to remove the box entirely.")
-                        Text("\(Int(project.selectedBlock.style.backgroundOpacity * 100))%")
-                            .font(.appSmallDigits)
-                            .frame(width: Metrics.readoutWidth, alignment: .trailing)
-                    }
-                }
+                SliderRow(
+                    title: "Opacity",
+                    value: $project.selectedBlock.style.backgroundOpacity,
+                    range: 0.1...1,
+                    format: { "\(Int($0 * 100))%" },
+                    spokenName: "Background opacity",
+                    // The slider stops at 10% so "enabled" always means
+                    // visible; removing the box entirely is the checkbox's
+                    // job, and nothing else says so.
+                    help: "Ranges from 10% to 100%. Uncheck Text Background to remove the box entirely."
+                )
 
-                LabeledContent("Padding") {
-                    HStack(spacing: Spacing.small) {
-                        Slider(value: $project.selectedBlock.style.padding, in: 0...64)
-                            .accessibilityLabel("Background padding")
-                            .accessibilityValue("\(Int(project.selectedBlock.style.padding))")
-                        Text("\(Int(project.selectedBlock.style.padding))")
-                            .font(.appSmallDigits)
-                            .frame(width: Metrics.readoutWidth, alignment: .trailing)
-                    }
-                }
+                SliderRow(
+                    title: "Padding",
+                    value: $project.selectedBlock.style.padding,
+                    range: 0...64,
+                    format: { "\(Int($0))" },
+                    spokenName: "Background padding"
+                )
 
-                HStack(spacing: 0) {
-                    Text("Instagram's native padding is approximately ")
-                    Button {
-                        project.selectedBlock.style.padding = Self.instagramPadding
-                    } label: {
-                        Text("\(Int(Self.instagramPadding))")
-                            .underline()
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.tint)
-                    .help("Set padding to \(Int(Self.instagramPadding))")
-                    .accessibilityLabel("Set padding to \(Int(Self.instagramPadding))")
-                    Text(".")
-                }
-                .font(.appSmall)
-                .foregroundStyle(.secondary)
+                paddingHint
             }
             .disabled(!enabled)
         } header: {
@@ -190,6 +158,28 @@ struct StyleSidebarView: View {
                 Spacer()
             }
         }
+    }
+
+    private var paddingHint: some View {
+        HStack(spacing: 0) {
+            Text("Instagram's native padding is approximately ")
+            Button {
+                project.selectedBlock.style.padding = Self.instagramPadding
+            } label: {
+                Text("\(Int(Self.instagramPadding))")
+                    .underline()
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.tint)
+            .focused($paddingHintFocused)
+            .focusEffectDisabled()
+            .focusHalo(paddingHintFocused, shape: RoundedRectangle(cornerRadius: Radius.small))
+            .help("Set padding to \(Int(Self.instagramPadding))")
+            .accessibilityLabel("Set padding to \(Int(Self.instagramPadding))")
+            Text(".")
+        }
+        .font(.appSmall)
+        .foregroundStyle(.secondary)
     }
 
     private var exportFooter: some View {
@@ -225,60 +215,5 @@ struct StyleSidebarView: View {
             get: { project.selectedBlock.style[keyPath: keyPath] },
             set: { project.selectedBlock.style[keyPath: keyPath] = $0 }
         )
-    }
-}
-
-/// One-click preset swatches followed by the system color picker for anything
-/// else. The active preset gets a ring.
-private struct ColorRow: View {
-    let presets: [ColorSwatch]
-    @Binding var selection: RGBAColor
-
-    var body: some View {
-        HStack(spacing: Spacing.small) {
-            ForEach(presets) { preset in
-                let isSelected = selection.matches(preset.color)
-                Button {
-                    selection = preset.color
-                } label: {
-                    Circle()
-                        .fill(preset.color.color)
-                        .frame(width: Metrics.swatch, height: Metrics.swatch)
-                        .overlay(Circle().strokeBorder(Color.primary.opacity(Opacity.border), lineWidth: BorderWidth.hairline))
-                        .overlay {
-                            Circle()
-                                .strokeBorder(Color.accentColor, lineWidth: BorderWidth.emphasis)
-                                .padding(-Spacing.tight)
-                                .opacity(isSelected ? 1 : 0)
-                        }
-                        // A second channel for selection, since an accent ring
-                        // alone is hard to pick out against a dark swatch.
-                        .overlay {
-                            if isSelected {
-                                Image(systemName: "checkmark")
-                                    .font(.system(size: IconSize.badge, weight: .bold))
-                                    .foregroundStyle(preset.color.isLight ? Color.black : Color.white)
-                            }
-                        }
-                }
-                .buttonStyle(.plain)
-                .help(preset.name)
-                .accessibilityLabel(preset.name)
-                .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-            }
-
-            ColorPicker(
-                "Custom color",
-                selection: Binding(
-                    get: { selection.color },
-                    set: { selection = RGBAColor(color: $0) }
-                ),
-                supportsOpacity: false
-            )
-            .labelsHidden()
-            // macOS's color panel has no OK button—it applies as you pick—so
-            // say that rather than leave people hunting for one.
-            .help("Custom color. Changes apply as you pick; close the panel when you are done.")
-        }
     }
 }

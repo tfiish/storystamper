@@ -79,7 +79,7 @@ struct VideoPreviewView: View {
                 .font(.appRegular)
                 .foregroundStyle(.secondary)
             Button("Choose Video") {
-                chooseVideo(for: project)
+                project.chooseVideo()
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -139,19 +139,15 @@ struct VideoPreviewView: View {
         // Inset from the video's corner by one spacing step, expressed from
         // the button's own size so the gap stays right if either changes.
         let inset = Metrics.overlayButton / 2 + Spacing.small
-        return Button {
+        return IconButton(
+            systemName: "xmark",
+            label: "Unload video and clear story text",
+            glyphSize: IconSize.small,
+            glyphWeight: .bold,
+            style: .scrim
+        ) {
             project.requestClearVideo()
-        } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: IconSize.small, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: Metrics.overlayButton, height: Metrics.overlayButton)
-                .background(Circle().fill(Color.black.opacity(Opacity.scrim)))
-                .overlay(Circle().strokeBorder(Color.white.opacity(Opacity.border), lineWidth: BorderWidth.hairline))
         }
-        .buttonStyle(.plain)
-        .help("Unload this video and clear the story text")
-        .accessibilityLabel("Unload video and clear story text")
         .position(x: videoRect.maxX - inset, y: videoRect.minY + inset)
     }
 
@@ -262,20 +258,6 @@ struct VideoPreviewView: View {
     }
 }
 
-/// Shared open-panel flow, used by the drop prompt, the Choose Video button,
-/// and the Replace Video button.
-@MainActor
-func chooseVideo(for project: StoryProject) {
-    let panel = NSOpenPanel()
-    panel.allowedContentTypes = StoryProject.allowedContentTypes
-    panel.allowsMultipleSelection = false
-    panel.canChooseDirectories = false
-    panel.title = "Choose Video"
-    if panel.runModal() == .OK, let url = panel.url {
-        project.loadVideo(from: url)
-    }
-}
-
 // MARK: - Alignment guides
 
 /// Midlines that appear only while a drag is snapped to them.
@@ -348,20 +330,17 @@ private struct TransportBar: View {
     var body: some View {
         BarStrip(horizontalPadding: Spacing.large) {
             HStack(spacing: Spacing.medium) {
-                Button {
+                IconButton(
+                    systemName: project.isPlaying ? "pause.fill" : "play.fill",
+                    label: project.isPlaying ? "Pause" : "Play",
+                    // AppKit offers key equivalents to the view tree before
+                    // the first responder sees the key, so an unconditional
+                    // space shortcut would swallow spaces typed into the
+                    // story text.
+                    shortcut: project.isEditingText ? nil : KeyboardShortcut(.space, modifiers: [])
+                ) {
                     project.togglePlayback()
-                } label: {
-                    Image(systemName: project.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.system(size: IconSize.medium))
-                        .frame(width: Metrics.overlayButton)
                 }
-                .buttonStyle(.plain)
-                // AppKit offers key equivalents to the view tree before the
-                // first responder sees the key, so an unconditional space
-                // shortcut would swallow spaces typed into the story text.
-                .keyboardShortcut(project.isEditingText ? nil : KeyboardShortcut(.space, modifiers: []))
-                .help(project.isPlaying ? "Pause" : "Play")
-                .accessibilityLabel(project.isPlaying ? "Pause" : "Play")
 
                 Text(VideoInfo.timecode(project.currentTime))
                     .font(.appSmallDigits)

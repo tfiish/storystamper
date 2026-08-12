@@ -4,29 +4,20 @@ import SwiftUI
 /// itself while you work. Styling lives opposite in `StyleSidebarView`.
 struct SourceSidebarView: View {
     @Bindable var project: StoryProject
-    @State private var footerSheet: FooterSheet?
-
-    /// One sheet slot for the footer's two buttons, since two
-    /// `.sheet(isPresented:)` modifiers on one view contend with each other.
-    private enum FooterSheet: String, Identifiable {
-        case about
-        case settings
-
-        var id: String { rawValue }
-    }
 
     var body: some View {
         VStack(spacing: 0) {
             Form {
                 videoSection
                 previewSection
+                themeSection
             }
             .formStyle(.grouped)
 
             footer
         }
         .frame(width: Metrics.sourceSidebarWidth)
-        .sheet(item: $footerSheet) { sheet in
+        .sheet(item: $project.infoSheet) { sheet in
             switch sheet {
             case .about: AboutView()
             case .settings: SettingsView(project: project)
@@ -38,9 +29,9 @@ struct SourceSidebarView: View {
         BarStrip {
             VStack(spacing: Spacing.small) {
                 HStack(spacing: Spacing.small) {
-                    Button("Settings") { footerSheet = .settings }
+                    Button("Settings") { project.infoSheet = .settings }
                         .controlSize(.small)
-                    Button("About") { footerSheet = .about }
+                    Button("About") { project.infoSheet = .about }
                         .controlSize(.small)
                 }
                 Text("\(AppInfo.displayName) v\(AppInfo.version)")
@@ -68,7 +59,7 @@ struct SourceSidebarView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Button("Replace Video") {
-                    chooseVideo(for: project)
+                    project.chooseVideo()
                 }
             } else {
                 // No button here: the drop prompt filling the pane alongside
@@ -100,18 +91,21 @@ struct SourceSidebarView: View {
             Text("Shows approximately where Instagram's UI covers the top and bottom of a story.")
                 .font(.appSmall)
                 .foregroundStyle(.secondary)
+        }
+    }
 
-            LabeledContent("Appearance") {
-                Picker("Appearance", selection: $project.appearance) {
-                    ForEach(AppearanceChoice.allCases) { choice in
-                        Label(choice.displayName, systemImage: choice.symbolName)
-                            .labelStyle(.iconOnly)
-                            .help(choice.displayName)
-                            .tag(choice)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+    /// Its own section, not a row under Preview: this changes the whole app,
+    /// including the open, save, and color panels, rather than anything about
+    /// the preview.
+    private var themeSection: some View {
+        Section("Theme") {
+            GlyphPicker(
+                title: "Theme",
+                selection: $project.appearance,
+                items: AppearanceChoice.allCases,
+                name: { $0.displayName }
+            ) { choice in
+                Image(systemName: choice.symbolName)
             }
         }
     }

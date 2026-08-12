@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct ContentView: View {
+struct MainWindowView: View {
     @Bindable private var project = StoryProject.shared
 
     private var exportSheetVisible: Binding<Bool> {

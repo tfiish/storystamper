@@ -2,6 +2,24 @@
 
 Purpose of this document: everything needed to build, test, and modify the app. The [README](README.md) covers what the app does; this covers how the code is organized and verified.
 
+## Rule zero: this app is lightweight
+
+**Story Stamper's single most important property is that it is fast.** Fast to open, fast to type a caption into, fast to export. That is the entire reason it exists—the workflow it replaces is moving a clip onto a phone and back, and any version of this app that feels heavy is not worth using instead.
+
+**If a change would substantially slow down launch, editing, or export, it should not be implemented.** Not behind a setting, not "just for power users", not with a loading spinner to cover it. Reject it. This outranks every other consideration in this document, including consistency, completeness, and features that would be nice to have.
+
+Concretely, this rules out:
+
+- Third-party dependencies. [Package.swift](Package.swift) declares none, and that is a feature. Every one of them is startup time and binary size.
+- Anything on the network: no accounts, telemetry, crash reporting, update checks, or cloud anything. Launch must never wait on a server.
+- Work at launch that is not needed to show the window and accept a drop.
+- Per-keystroke or per-frame work that grows with video resolution. The overlay render cache exists precisely because rasterizing text at 4K on every keystroke was too slow.
+- Scope that turns a single-purpose utility into an editor: timelines, trimming, filters, animation, stickers, or more than three text blocks.
+
+Speed you have already paid for and must not give back: hardware H.264 encoding, audio remuxing instead of re-encoding, the signature-cached overlay renders, and live progress parsing. Each is called out under *Invariants worth preserving* below.
+
+When a change is a genuine trade—slower but meaningfully better—measure it first and say so in the pull request. "It only adds a few milliseconds" is not a measurement.
+
 ## Commands
 
 | Task | Command |
@@ -40,29 +58,52 @@ ffprobe -v error -select_streams v:0 -show_entries stream=width,height \
 
 ```
 Sources/StoryStamper/
-├── StoryStamperApp.swift        Entry point; routes --smoke-export to SmokeTest
+├── StoryStamperApp.swift        Entry point, app delegate, quit guard; routes
+│                                --smoke-export to SmokeTest
 ├── SmokeTest.swift              Headless end-to-end export
-├── Models/
-│   ├── StoryProject.swift       @Observable source of truth: video, playback,
-│   │                            text blocks (up to three), selection, and export
+├── DesignSystem/
+│   └── DesignSystem.swift       Every number the interface draws with
+├── Models/                      Value types. No behavior beyond their own data.
 │   ├── OverlayStyle.swift       Codable style settings + font/color/alignment enums
+│   ├── OverlayBlock.swift       One text block: content, style, normalized center
+│   ├── RenderedOverlay.swift    A rasterized block, and one placed for compositing
 │   ├── VideoInfo.swift          One-shot AVFoundation probe (rotation-aware size)
-│   ├── SettingsStore.swift      UserDefaults persistence for style settings
-│   └── AppInfo.swift            Display name and version for the sidebar footer
+│   ├── AppearanceChoice.swift   System, light, or dark, applied to NSApp
+│   ├── ExportPhase.swift        Where an export is in its lifecycle
+│   ├── ConfirmationRequest.swift  A destructive action awaiting confirmation
+│   └── InfoSheet.swift          Which of About or Settings is showing
+├── State/
+│   └── StoryProject.swift       @Observable source of truth: video, playback,
+│                                text blocks (up to three), selection, and export
+├── Support/
+│   ├── SettingsStore.swift      UserDefaults persistence for preferences
+│   └── AppInfo.swift            Display name, version, and repository URL
 ├── Rendering/
 │   └── OverlayRenderer.swift    Core Graphics text-block raster + placement math
 ├── Export/
-│   ├── VideoExporter.swift      Temp PNG + FFmpeg argument construction
-│   └── FFmpegService.swift      FFmpeg discovery, Process runner, progress parsing
+│   ├── VideoExporter.swift      Overlay PNG, FFmpeg arguments, staged output
+│   ├── FFmpegService.swift      FFmpeg discovery, Process runner, progress parsing
+│   ├── ExportError.swift        Every way an export can fail
+│   └── ExportScratch.swift      The one scratch root, swept at launch and quit
 └── Views/
-    ├── DesignSystem.swift       Type, spacing, radius, border, icon, and size tokens
-    ├── ContentView.swift        Three-column layout, export sheet, error alert
-    ├── SourceSidebarView.swift  Left: video info, preview guides, About, version
-    ├── VideoPreviewView.swift   Center: preview canvas, drag, safe areas, transport
+    ├── MainWindowView.swift     Three-column layout, export sheet, error alert
+    ├── StoryCommands.swift      The menu bar
+    ├── SourceSidebarView.swift  Left: video, preview guides, theme, About, version
+    ├── VideoPreviewView.swift   Center: preview canvas, drag, arrow keys, transport
     ├── PlayerLayerView.swift    Bare AVPlayerLayer host (exact geometry, no chrome)
-    ├── StyleSidebarView.swift   Right: story text, text style, text background, export
+    ├── StyleSidebarView.swift   Right: story text, text style, background, export
     ├── ExportStatusView.swift   Progress, completion, and failure sheet
-    └── AboutView.swift          What the app is for, with a repository link
+    ├── ConfirmationSheet.swift  Destructive confirmation, with "Don't ask again"
+    ├── SettingsView.swift       The preferences sheet
+    ├── AboutView.swift          What the app is for, with a repository link
+    └── Components/              Shared UI. Reach for one of these before writing
+        ├── GlyphPicker.swift    Segmented glyph control: fast tooltip, focus, keys
+        ├── SliderRow.swift      Labelled slider plus fixed-width readout
+        ├── ColorRow.swift       Preset swatches plus the system color picker
+        ├── IconButton.swift     Icon-only button; label is required, not optional
+        ├── BarStrip.swift       Pinned bar-material strip (both footers, transport)
+        ├── SidebarSplitter.swift  Draggable divider for the style sidebar
+        └── FontSample.swift     Font specimens rasterized in their own typefaces
 ```
 
 ## Invariants worth preserving
@@ -74,6 +115,8 @@ Sources/StoryStamper/
 - **Rotation:** FFmpeg auto-rotates input before the filter graph, and the `sidedata=mode=delete:type=DISPLAYMATRIX` filter strips the stale rotation side data FFmpeg 7 would otherwise copy into the output. Removing that filter reintroduces a double-rotation bug on phone footage.
 - **Font size and padding are authored against a 1080-wide frame** and multiplied by `min(width, height) / 1080` in `OverlayRenderer.scaled(_:for:)`. Window size never affects them; video resolution scales them proportionally so a setting looks the same on 1080p and 4K.
 - **Export prefers `h264_videotoolbox`.** `FFmpegService.supportsVideoToolbox` probes `ffmpeg -encoders` per export (about 30 ms) and `VideoExporter` falls back to libx264 `veryfast` when it is missing. On a 38-second 4K clip this is the difference between roughly 20 seconds and over ten minutes, so do not "simplify" it back to a single software encoder.
+- **Nothing is written to the user's chosen destination until the encode succeeds.** FFmpeg writes into `ExportScratch`, and `VideoExporter.install` moves the finished file into place. A cancel, a failure, or a quit therefore leaves no truncated MP4 behind. Do not "simplify" this by pointing FFmpeg at the destination.
+- **Destructive actions go through `requestClearVideo` and `requestRemoveSelectedBlock`.** Those are the only two paths that discard typed text, and they are where the confirmation lives. Calling `clearVideo` or `removeSelectedBlock` directly would bypass it, which is why both are private.
 - **Progress is read with `readabilityHandler`, not `FileHandle.bytes`.** The async byte sequence buffers so aggressively that progress arrived in one late lump; the handler-based reader delivers FFmpeg's twice-a-second updates live.
 
 ## Releasing
@@ -82,16 +125,21 @@ Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist`,
 
 ## Design system
 
-Every number the interface draws with lives in [Views/DesignSystem.swift](Sources/StoryStamper/Views/DesignSystem.swift). Views should contain no raw layout literals; if you need a value that is not there, add it there first.
+Every number the interface draws with lives in [DesignSystem/DesignSystem.swift](Sources/StoryStamper/DesignSystem/DesignSystem.swift)—including color alpha, motion durations, and stroke patterns, not just geometry. Views should contain no raw layout literals; if you need a value that is not there, add it there first.
 
 | Token group | Values | Use |
 | --- | --- | --- |
-| `TextSize` | 8, 10, 13, 16, 21 | The only permitted text sizes |
+| `TextSize` | 10, 13, 16 | The only permitted text sizes |
 | `Spacing` | 2, 4, 8, 12, 16, 24 | A 4-point grid for all gaps and insets |
 | `Radius` | 6, 12 | Corner radii |
 | `BorderWidth` | 1, 2, 3 | Strokes and hairlines |
-| `IconSize` | 12, 16, 26, 34, 44 | SF Symbols only |
-| `Metrics` | named | Component sizes: sidebar width, swatch, readout, sheet widths |
+| `Stroke` | named | Dash patterns |
+| `Opacity` | named | Scrims, washes, rules, borders, rings, halos |
+| `Motion` | named | Animation and hover-delay durations |
+| `FocusHalo` | named | The focus indicator for self-drawn controls |
+| `IconSize` | 9, 12, 14, 16, 26, 34, 44 | Glyphs, including font specimens |
+| `Interaction` | named | Snap tolerance and arrow-key steps |
+| `Metrics` | named | Component sizes: sidebars, swatch, readout, sheets |
 
 Use the `Font` helpers (`.appSmall`, `.appSmallDigits`, `.appRegular`, `.appRegularBold`, `.appTitle`) rather than SwiftUI's semantic styles, whose sizes fall off the scale (`.callout` is 12 pt, `.title3` is 15 pt).
 
@@ -104,3 +152,5 @@ The one allowed literal is `spacing: 0`, which means "no gap" structurally rathe
 - Oxford comma in any list, in code comments, UI copy, and docs alike.
 - Em-dashes sit directly between words—like this—with no surrounding spaces.
 - Comments only where behavior is non-obvious; no force unwraps.
+- Before writing a control, check `Views/Components`. A second copy of a slider row or an icon button is how the first drift starts.
+- Icon-only controls take a spoken label. `IconButton` and `GlyphPicker` both require one, so this is enforced rather than remembered.

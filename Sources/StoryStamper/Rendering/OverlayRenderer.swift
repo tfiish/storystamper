@@ -3,20 +3,6 @@ import CoreGraphics
 import Foundation
 import UniformTypeIdentifiers
 
-/// A rasterized text block at full source-video resolution.
-/// CGImage is immutable, so crossing actor boundaries is safe.
-struct RenderedOverlay: @unchecked Sendable {
-    let cgImage: CGImage
-    /// Size of the block in source-video pixels.
-    let pixelSize: CGSize
-}
-
-/// A rendered block paired with its normalized center, ready for compositing.
-struct PlacedOverlay: Sendable {
-    let overlay: RenderedOverlay
-    let center: CGPoint
-}
-
 /// Renders the story text block with Core Graphics. The preview displays this
 /// exact image scaled down, and the exporter composites it at full resolution,
 /// so the two cannot drift apart.

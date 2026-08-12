@@ -2,6 +2,17 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.7.0 — 2026-08-12
+
+- **A menu bar.** Every action the app can perform now has a menu item: Open and Replace Video (Command-O), Export Video (Command-E), Add and Remove Text Block, Select Block 1 through 3, Play and Pause, Unload Video, Area Guides (Command-G), and Theme. About in the app menu opens the app's own About box rather than the system panel, and Settings is where macOS expects it at Command-comma.
+- **Font, Alignment, and Theme are a new control** rather than a system segmented picker. It shows its own hover label after a quarter second instead of the system tooltip's unsettable delay of roughly a second, it draws a focus ring, and the arrow keys move between options. A caption under each one names the current choice in words, since a row of symbols never says which is on.
+- **Theme is its own section**, not a row under Preview—it changes the whole app, including the open, save, and color panels.
+- **Keyboard focus is visible** on the controls that draw themselves: the swatches, the close and play buttons, the padding shortcut, and the new pickers. They previously had no focus indicator at all.
+- The style sidebar is disabled until a video is loaded. Every control in it edits an overlay that cannot exist yet, and only one of them said so.
+- Removed the helper text under Add Text Block, and replaced the note about the 1080-wide reference frame with something a user has reason to care about: style changes apply only to the selected block.
+- Under the hood: shared components for the slider rows, color rows, icon buttons, and pickers, so there is one implementation of each rather than three; and a folder layout that separates value types, app state, support, and views.
+- [DEVELOPING.md](DEVELOPING.md) opens with rule zero—this app is lightweight, and anything that would substantially slow down launch, editing, or export should not be implemented.
+
 ## 1.6.1 — 2026-08-12
 
 - Choose Video, Replace Video, Export Video, and Settings no longer take an ellipsis, so the four buttons that open something are punctuated alike.

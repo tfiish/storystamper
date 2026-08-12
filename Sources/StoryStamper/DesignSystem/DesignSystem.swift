@@ -59,6 +59,15 @@ enum Stroke {
     static let selectionDash: [CGFloat] = [5, 4]
 }
 
+/// The keyboard-focus indicator for controls that draw themselves and so get
+/// no system focus ring.
+enum FocusHalo {
+    static let width: CGFloat = BorderWidth.strong
+    /// An optical offset rather than layout: the halo sits outside the
+    /// control's own border, so it is not held to the spacing grid.
+    static let inset: CGFloat = 5
+}
+
 // MARK: - Color alpha
 
 /// Named alpha values. The app draws over video, where a handful of washes and
@@ -75,6 +84,11 @@ enum Opacity {
     static let border: Double = 0.3
     /// Selection ring around the active block.
     static let ring: Double = 0.8
+    /// Halo marking keyboard focus. Deliberately softer than `ring`, so focus
+    /// and selection never read as the same thing on the same control.
+    static let focusHalo: Double = 0.35
+    /// Lift under the selected segment of a glyph picker.
+    static let segmentShadow: Double = 0.12
 }
 
 // MARK: - Motion
@@ -82,6 +96,10 @@ enum Opacity {
 enum Motion {
     /// Guides appearing and disappearing: fast enough to feel instant.
     static let quick: Double = 0.1
+    /// How long the pointer must rest on a glyph before its name appears.
+    /// Well under the system tooltip delay, which is not publicly settable—
+    /// which is the whole reason these controls draw their own.
+    static let tooltipDelay: Double = 0.25
     /// Interpolation between FFmpeg's twice-a-second progress reports.
     static let progress: Double = 0.6
 }
@@ -151,8 +169,11 @@ enum Metrics {
     static let readoutWidth: CGFloat = 32
     /// Color preset swatch diameter.
     static let swatch: CGFloat = 16
-    /// Round button floating over the video.
+    /// Round button floating over the video, and the tap target for any
+    /// icon-only button.
     static let overlayButton: CGFloat = 24
+    /// One segment of a glyph picker, matching a small segmented control.
+    static let segmentHeight: CGFloat = 22
     static let textEditorMinHeight: CGFloat = 100
 
     static let sheetMinWidth: CGFloat = 340
