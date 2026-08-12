@@ -2,6 +2,10 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 2.0.2 — 2026-08-12
+
+- **The export readout no longer says "about a few seconds remaining."** "About" hedges a quantity, and "a few seconds" is already the hedge—it now reads "a few seconds remaining" on its own. Every estimate that names a number still keeps its "about."
+
 ## 2.0.1 — 2026-08-12
 
 - **The X over the video is gone. Clearing a video is now a button in the left panel**, directly under Replace Video, where the other thing you can do to a loaded clip already lives. A destructive control sitting on top of the thing being judged was the wrong place for it, and it brought a problem with it: a disc and a ring drawn over arbitrary footage have no shade that works against every frame. Naming the button retires the question instead of answering it.

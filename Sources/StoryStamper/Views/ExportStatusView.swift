@@ -95,17 +95,19 @@ private struct ExportProgressView: View {
         guard elapsed > 1 else { return "\(percent)%" }
         let remaining = elapsed / progress - elapsed
         guard remaining.isFinite, remaining > 0 else { return "\(percent)%" }
-        return "\(percent)%, about \(formatted(remaining)) remaining"
+        return "\(percent)%, \(formatted(remaining)) remaining"
     }
 
+    /// "about" hedges a quantity, so it only goes in front of one—"about a few
+    /// seconds" hedges a hedge.
     private func formatted(_ seconds: Double) -> String {
         if seconds < 10 { return "a few seconds" }
         // Buckets stop at 55 so the step above them is always "a minute"
         // rather than "60 seconds", and the label never leaps a granularity:
         // the old boundary turned an extra tenth of a second at 89.9s into
         // "90 seconds" and then "2 minutes".
-        if seconds < 60 { return "\(min(Int((seconds / 5).rounded()) * 5, 55)) seconds" }
-        if seconds < 90 { return "a minute" }
-        return "\(Int((seconds / 60).rounded())) minutes"
+        if seconds < 60 { return "about \(min(Int((seconds / 5).rounded()) * 5, 55)) seconds" }
+        if seconds < 90 { return "about a minute" }
+        return "about \(Int((seconds / 60).rounded())) minutes"
     }
 }
