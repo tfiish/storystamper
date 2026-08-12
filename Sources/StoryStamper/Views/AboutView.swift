@@ -10,6 +10,7 @@ struct AboutView: View {
                 Image(systemName: "text.below.photo")
                     .font(.system(size: IconSize.large))
                     .foregroundStyle(.tint)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Spacing.hair) {
                     Text(AppInfo.displayName)
                         .font(.appTitle)
@@ -44,6 +45,6 @@ struct AboutView: View {
         }
         .font(.appRegular)
         .padding(Spacing.xLarge)
-        .frame(width: Metrics.aboutWidth)
+        .frame(width: Metrics.sheetWidth)
     }
 }

@@ -23,7 +23,7 @@ struct ExportStatusView: View {
                     .frame(width: Metrics.progressWidth)
                     // FFmpeg reports about twice a second; interpolating
                     // between updates keeps the bar from stepping.
-                    .animation(.linear(duration: 0.6), value: progress)
+                    .animation(.linear(duration: Motion.progress), value: progress)
 
                 Text(statusLine(progress: progress))
                     .font(.appSmallDigits)
@@ -32,12 +32,14 @@ struct ExportStatusView: View {
                 Button("Cancel") {
                     project.cancelExport()
                 }
+                .keyboardShortcut(.cancelAction)
 
             case .completed:
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: IconSize.status))
                     .foregroundStyle(.green)
-                Text("Export complete")
+                    .accessibilityHidden(true)
+                Text("Export Complete")
                     .font(.appRegularBold)
                 HStack(spacing: Spacing.medium) {
                     Button("Reveal in Finder") {
@@ -50,16 +52,17 @@ struct ExportStatusView: View {
                 }
 
             case .failed(let message):
-                Image(systemName: "exclamationmark.triangle.fill")
+                Image(systemName: "xmark.circle.fill")
                     .font(.system(size: IconSize.status))
-                    .foregroundStyle(.orange)
-                Text("Export failed")
+                    .foregroundStyle(.red)
+                    .accessibilityHidden(true)
+                Text("Export Failed")
                     .font(.appRegularBold)
                 Text(message)
                     .font(.appRegular)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
-                    .frame(maxWidth: Metrics.progressWidth)
+                    .frame(maxWidth: Metrics.sheetTextWidth)
                     .textSelection(.enabled)
                 Button("Close") {
                     project.finishExport()
@@ -90,8 +93,12 @@ struct ExportStatusView: View {
 
     private func formatted(_ seconds: Double) -> String {
         if seconds < 10 { return "a few seconds" }
-        if seconds < 90 { return "\(Int((seconds / 5).rounded()) * 5) seconds" }
-        let minutes = Int((seconds / 60).rounded())
-        return minutes == 1 ? "a minute" : "\(minutes) minutes"
+        // Buckets stop at 55 so the step above them is always "a minute"
+        // rather than "60 seconds", and the label never leaps a granularity:
+        // the old boundary turned an extra tenth of a second at 89.9s into
+        // "90 seconds" and then "2 minutes".
+        if seconds < 60 { return "\(min(Int((seconds / 5).rounded()) * 5, 55)) seconds" }
+        if seconds < 90 { return "a minute" }
+        return "\(Int((seconds / 60).rounded())) minutes"
     }
 }

@@ -1,18 +1,17 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The left pane: drop zone, video preview with draggable overlays, safe-area
-/// guides, and transport controls.
+/// The center pane: drop zone, video preview with draggable overlays,
+/// safe-area guides, and transport controls.
 struct VideoPreviewView: View {
     @Bindable var project: StoryProject
     @State private var isDropTargeted = false
     @State private var dragStartCenter: CGPoint?
     @State private var snappedToCenterX = false
     @State private var snappedToCenterY = false
-
-    /// How close, in preview points, a drag must come to a midline before it
-    /// snaps. Measured on screen so the feel is the same at any window size.
-    private let snapDistance: CGFloat = 9
+    /// Whether the preview holds keyboard focus, which is what makes the
+    /// arrow keys nudge the selected block.
+    @FocusState private var previewFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -34,11 +33,36 @@ struct VideoPreviewView: View {
                         .padding(Spacing.small)
                 }
             }
+            .focusable(project.video != nil)
+            .focused($previewFocused)
+            .focusEffectDisabled()
+            .onKeyPress(keys: [.upArrow, .downArrow, .leftArrow, .rightArrow], phases: [.down, .repeat]) { press in
+                nudge(press)
+            }
+            .accessibilityLabel("Video preview")
+            .accessibilityHint("Arrow keys move the selected text block. Hold Shift to move farther.")
 
             if project.video != nil {
                 TransportBar(project: project)
             }
         }
+    }
+
+    // MARK: - Keyboard placement
+
+    /// Arrow keys are the non-mouse route to positioning, and the precise one:
+    /// a fine step is about four pixels on a 1080-wide frame.
+    private func nudge(_ press: KeyPress) -> KeyPress.Result {
+        guard project.video != nil else { return .ignored }
+        let step = press.modifiers.contains(.shift) ? Interaction.nudgeCoarse : Interaction.nudgeFine
+        switch press.key {
+        case .upArrow: project.nudgeSelectedBlock(dx: 0, dy: -step)
+        case .downArrow: project.nudgeSelectedBlock(dx: 0, dy: step)
+        case .leftArrow: project.nudgeSelectedBlock(dx: -step, dy: 0)
+        case .rightArrow: project.nudgeSelectedBlock(dx: step, dy: 0)
+        default: return .ignored
+        }
+        return .handled
     }
 
     // MARK: - Empty state
@@ -48,12 +72,13 @@ struct VideoPreviewView: View {
             Image(systemName: "film.stack")
                 .font(.system(size: IconSize.emptyState, weight: .light))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("Drag a video here")
                 .font(.appTitle)
             Text("MP4, MOV, or M4V")
                 .font(.appRegular)
                 .foregroundStyle(.secondary)
-            Button("Choose Video…") {
+            Button("Choose Video") {
                 chooseVideo(for: project)
             }
         }
@@ -111,19 +136,23 @@ struct VideoPreviewView: View {
     }
 
     private func clearButton(videoRect: CGRect) -> some View {
-        Button {
-            project.clearVideo()
+        // Inset from the video's corner by one spacing step, expressed from
+        // the button's own size so the gap stays right if either changes.
+        let inset = Metrics.overlayButton / 2 + Spacing.small
+        return Button {
+            project.requestClearVideo()
         } label: {
             Image(systemName: "xmark")
                 .font(.system(size: IconSize.small, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: Metrics.overlayButton, height: Metrics.overlayButton)
-                .background(Circle().fill(Color.black.opacity(0.55)))
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.25), lineWidth: BorderWidth.hairline))
+                .background(Circle().fill(Color.black.opacity(Opacity.scrim)))
+                .overlay(Circle().strokeBorder(Color.white.opacity(Opacity.border), lineWidth: BorderWidth.hairline))
         }
         .buttonStyle(.plain)
-        .help("Close this video and choose another")
-        .position(x: videoRect.maxX - 20, y: videoRect.minY + 20)
+        .help("Unload this video and clear the story text")
+        .accessibilityLabel("Unload video and clear story text")
+        .position(x: videoRect.maxX - inset, y: videoRect.minY + inset)
     }
 
     private func overlayView(_ overlay: RenderedOverlay, blockIndex: Int, video: VideoInfo, videoRect: CGRect) -> some View {
@@ -134,8 +163,11 @@ struct VideoPreviewView: View {
             blockSize: overlay.pixelSize,
             videoSize: video.displaySize
         )
-        // The selection ring only matters once a second block exists.
-        let isSelected = project.blocks.count > 1 && blockIndex == min(project.selectedIndex, project.blocks.count - 1)
+        // The ring marks what the controls—and the arrow keys—are about to
+        // act on, so it matters once there is a second block, and whenever the
+        // preview has keyboard focus.
+        let isTarget = blockIndex == min(project.selectedIndex, project.blocks.count - 1)
+        let isSelected = isTarget && (project.blocks.count > 1 || previewFocused)
 
         return Image(decorative: overlay.cgImage, scale: 1)
             .resizable()
@@ -144,7 +176,10 @@ struct VideoPreviewView: View {
             .overlay {
                 if isSelected {
                     RoundedRectangle(cornerRadius: Radius.small)
-                        .strokeBorder(Color.accentColor.opacity(0.8), style: StrokeStyle(lineWidth: BorderWidth.emphasis, dash: [5, 4]))
+                        .strokeBorder(
+                            Color.accentColor.opacity(Opacity.ring),
+                            style: StrokeStyle(lineWidth: BorderWidth.emphasis, dash: Stroke.selectionDash)
+                        )
                         .padding(-Spacing.tight)
                 }
             }
@@ -153,14 +188,14 @@ struct VideoPreviewView: View {
                 y: videoRect.minY + center.y * videoRect.height
             )
             .onTapGesture {
-                project.selectedIndex = blockIndex
+                select(blockIndex)
             }
             .gesture(
                 DragGesture()
                     .onChanged { value in
                         if dragStartCenter == nil {
-                            dragStartCenter = center
-                            project.selectedIndex = blockIndex
+                            dragStartCenter = project.blocks[blockIndex].center
+                            select(blockIndex)
                         }
                         guard let start = dragStartCenter, videoRect.width > 0, videoRect.height > 0 else { return }
 
@@ -171,8 +206,8 @@ struct VideoPreviewView: View {
 
                         // Snap each axis independently to the midline, using a
                         // threshold expressed in screen points.
-                        let snapX = abs(proposed.x - 0.5) * videoRect.width < snapDistance
-                        let snapY = abs(proposed.y - 0.5) * videoRect.height < snapDistance
+                        let snapX = abs(proposed.x - 0.5) * videoRect.width < Interaction.snapTolerance
+                        let snapY = abs(proposed.y - 0.5) * videoRect.height < Interaction.snapTolerance
                         if snapX { proposed.x = 0.5 }
                         if snapY { proposed.y = 0.5 }
                         if snapX != snappedToCenterX { snappedToCenterX = snapX }
@@ -190,6 +225,17 @@ struct VideoPreviewView: View {
                         snappedToCenterY = false
                     }
             )
+            .accessibilityElement()
+            .accessibilityLabel("Text block \(blockIndex + 1)")
+            .accessibilityValue(project.blocks[blockIndex].text)
+            .accessibilityAddTraits(isTarget ? [.isSelected] : [])
+    }
+
+    /// Selecting a block also takes keyboard focus, so the arrow keys act on
+    /// whatever was just clicked without a separate focusing step.
+    private func select(_ blockIndex: Int) {
+        project.selectedIndex = blockIndex
+        previewFocused = true
     }
 
     // MARK: - Drop handling
@@ -207,22 +253,21 @@ struct VideoPreviewView: View {
             }
             guard let url else { return }
             Task { @MainActor in
-                if StoryProject.isAcceptableVideo(url: url) {
-                    project.loadVideo(from: url)
-                } else {
-                    project.loadErrorMessage = "Please choose an MP4, MOV, or M4V video."
-                }
+                // loadVideo owns the file-type rule, so the drop path and the
+                // open panel cannot disagree about what is acceptable.
+                project.loadVideo(from: url)
             }
         }
         return true
     }
 }
 
-/// Shared open-panel flow, used by the drop prompt, and the Replace Video button.
+/// Shared open-panel flow, used by the drop prompt, the Choose Video button,
+/// and the Replace Video button.
 @MainActor
 func chooseVideo(for project: StoryProject) {
     let panel = NSOpenPanel()
-    panel.allowedContentTypes = [.mpeg4Movie, .quickTimeMovie, .movie]
+    panel.allowedContentTypes = StoryProject.allowedContentTypes
     panel.allowsMultipleSelection = false
     panel.canChooseDirectories = false
     panel.title = "Choose Video"
@@ -251,15 +296,16 @@ private struct CenterGuides: View {
             }
         }
         .allowsHitTesting(false)
-        .animation(.easeOut(duration: 0.1), value: showVertical)
-        .animation(.easeOut(duration: 0.1), value: showHorizontal)
+        .accessibilityHidden(true)
+        .animation(.easeOut(duration: Motion.quick), value: showVertical)
+        .animation(.easeOut(duration: Motion.quick), value: showHorizontal)
     }
 
     private func line(width: CGFloat, height: CGFloat) -> some View {
         Rectangle()
             .fill(Color.accentColor)
             .frame(width: width, height: height)
-            .shadow(color: .black.opacity(0.5), radius: BorderWidth.hairline)
+            .shadow(color: .black.opacity(Opacity.scrim), radius: BorderWidth.hairline)
     }
 }
 
@@ -278,14 +324,15 @@ private struct SafeAreaGuides: View {
                 .offset(x: videoRect.minX, y: videoRect.maxY - videoRect.height * bottomFraction)
         }
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     private func zone(height: CGFloat, edge: VerticalEdge) -> some View {
         Rectangle()
-            .fill(Color.black.opacity(0.25))
+            .fill(Color.black.opacity(Opacity.wash))
             .overlay(alignment: edge == .top ? .bottom : .top) {
                 Rectangle()
-                    .fill(Color.white.opacity(0.5))
+                    .fill(Color.white.opacity(Opacity.rule))
                     .frame(height: BorderWidth.hairline)
             }
             .frame(width: videoRect.width, height: height)
@@ -299,52 +346,54 @@ private struct TransportBar: View {
     @State private var wasPlayingBeforeScrub = false
 
     var body: some View {
-        HStack(spacing: Spacing.medium) {
-            Button {
-                project.togglePlayback()
-            } label: {
-                Image(systemName: project.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.system(size: IconSize.medium))
-                    .frame(width: Metrics.overlayButton)
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut(.space, modifiers: [])
-
-            Text(timeString(project.currentTime))
-                .font(.appSmallDigits)
-                .foregroundStyle(.secondary)
-
-            Slider(
-                value: Binding(
-                    get: { min(project.currentTime, duration) },
-                    set: { project.seek(to: $0) }
-                ),
-                in: 0...duration
-            ) { editing in
-                if editing {
-                    wasPlayingBeforeScrub = project.isPlaying
-                    project.pause()
-                } else if wasPlayingBeforeScrub {
+        BarStrip(horizontalPadding: Spacing.large) {
+            HStack(spacing: Spacing.medium) {
+                Button {
                     project.togglePlayback()
+                } label: {
+                    Image(systemName: project.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.system(size: IconSize.medium))
+                        .frame(width: Metrics.overlayButton)
                 }
-            }
+                .buttonStyle(.plain)
+                // AppKit offers key equivalents to the view tree before the
+                // first responder sees the key, so an unconditional space
+                // shortcut would swallow spaces typed into the story text.
+                .keyboardShortcut(project.isEditingText ? nil : KeyboardShortcut(.space, modifiers: []))
+                .help(project.isPlaying ? "Pause" : "Play")
+                .accessibilityLabel(project.isPlaying ? "Pause" : "Play")
 
-            Text(timeString(duration))
-                .font(.appSmallDigits)
-                .foregroundStyle(.secondary)
+                Text(VideoInfo.timecode(project.currentTime))
+                    .font(.appSmallDigits)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+
+                Slider(
+                    value: Binding(
+                        get: { min(project.currentTime, duration) },
+                        set: { project.seek(to: $0) }
+                    ),
+                    in: 0...duration
+                ) { editing in
+                    if editing {
+                        wasPlayingBeforeScrub = project.isPlaying
+                        project.pause()
+                    } else if wasPlayingBeforeScrub {
+                        project.togglePlayback()
+                    }
+                }
+                .accessibilityLabel("Playback position")
+                .accessibilityValue("\(VideoInfo.timecode(project.currentTime)) of \(VideoInfo.timecode(duration))")
+
+                Text(VideoInfo.timecode(duration))
+                    .font(.appSmallDigits)
+                    .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
+            }
         }
-        .padding(.horizontal, Spacing.large)
-        .padding(.vertical, Spacing.medium)
-        .background(.bar)
     }
 
     private var duration: Double {
         max(project.video?.duration ?? 0, 0.01)
-    }
-
-    private func timeString(_ seconds: Double) -> String {
-        guard seconds.isFinite, seconds >= 0 else { return "0:00" }
-        let total = Int(seconds.rounded())
-        return String(format: "%d:%02d", total / 60, total % 60)
     }
 }

@@ -2,6 +2,23 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.6.0 — 2026-08-12
+
+- **Cancelled and failed exports no longer leave a broken file behind.** FFmpeg now encodes into a scratch folder, and the finished video is moved to your chosen destination only after it completes. That folder is also swept at launch and at quit, so a crash or a force quit cannot leave debris.
+- **Quitting asks first** when a video is loaded, and warns separately when an export is running so a long encode cannot be thrown away by a stray Command-Q.
+- **Destructive actions confirm.** The X on the video and the Remove button now ask before discarding text you have typed, with a “Don't ask me again” checkbox. A new Settings box in the bottom-left turns that warning back on.
+- **Arrow keys reposition text.** Select a block and nudge it with the arrow keys; hold Shift to move farther. Dragging still works exactly as before.
+- **The space bar no longer gets stolen from the story text field.** It plays and pauses only while you are not typing.
+- **Appearance control**: System, Light, or Dark, applied to the whole app including the open, save, and color panels.
+- Font and alignment are now segmented controls showing sample glyphs, with tooltips, instead of a dropdown menu.
+- The left sidebar is narrower and its video metadata is condensed to one line; the right sidebar can be resized by dragging the divider beside it. The minimum window width dropped from 1000 to 822 points as a result.
+- Accessibility: every icon-only control, slider, and text block now carries a screen-reader label and value. Previously the app had none.
+- The open panel and drag-and-drop now enforce the same file types; the panel used to accept formats a drop would reject.
+- The export time estimate no longer jumps from “90 seconds” to “2 minutes”.
+- Videos with no audio track no longer get pointless audio encoder settings.
+- Copy and polish: Export Video takes an ellipsis, the export sheet's three headings are consistently title case, a failed export is red rather than orange, the video's duration is shown in the sidebar, and “story-safe area guides” is now the term everywhere.
+- Standardized the remaining untokenized values—color alpha, motion durations, and stroke patterns—so no view inlines a raw number. Removed two text sizes and three other members that nothing used.
+
 ## 1.5.0 — 2026-08-12
 
 - Story Text moved to the top of the right column; the left column now holds the video, preview guides, and About.
@@ -10,12 +27,14 @@ Purpose of this document: a human-readable record of user-visible changes per ve
 - Padding gained a hint that Instagram's native padding is roughly 20, with the number clickable to jump straight there.
 - Adding a text block now requires a loaded video.
 - Standardized the interface on a single design system: five text sizes (8, 10, 13, 16, and 21), a four-point spacing grid, and named tokens for radii, borders, icons, and component sizes.
+- Renamed the export button from Export Story Video to Export Video, and lightened the hint text below it.
+- Replaced the blue background swatch with a second gray, so the four sit at even steps from black to white.
 
 ## 1.4.0 — 2026-08-12
 
 - Up to three text blocks instead of two.
 - Text Background is now a checkbox beside the section title, with the None/Solid/Translucent modes gone: unchecking dims the controls, and dragging Opacity to 100% gives a solid box.
-- Added one-click color swatches beside both color pickers—black, blue, gray, and white for the background, white and black for the text.
+- Added one-click color swatches beside both color pickers—black, blue, gray, and white for the background, white and black for the text. (The blue was replaced by a second gray in 1.5.0.)
 - Added an About box in the bottom-left corner explaining what the app is for, with a link to the repository.
 - Centered the version label.
 

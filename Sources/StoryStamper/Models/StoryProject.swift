@@ -25,6 +25,10 @@ struct OverlayBlock: Identifiable, Equatable {
         self.style = style
         self.center = center
     }
+
+    var hasText: Bool {
+        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 }
 
 /// The single source of truth for the app: loaded video, playback state, text
@@ -32,6 +36,10 @@ struct OverlayBlock: Identifiable, Equatable {
 @MainActor
 @Observable
 final class StoryProject {
+    /// One window, one project. The app delegate needs to see this state to
+    /// guard quitting, so it lives here rather than inside a view's `@State`.
+    static let shared = StoryProject()
+
     static let maxBlocks = 3
 
     // MARK: - Video
@@ -40,7 +48,7 @@ final class StoryProject {
     let player = AVPlayer()
     private(set) var isPlaying = false
     private(set) var currentTime: Double = 0
-    var loadErrorMessage: String?
+    var loadError: VideoInfo.ProbeError?
 
     // MARK: - Text blocks
 
@@ -52,9 +60,35 @@ final class StoryProject {
     /// `safeSelectedIndex` so a stale value can never crash after removal.
     var selectedIndex = 0
 
+    /// True while the story text field has keyboard focus, so the transport
+    /// bar can give up the space bar rather than swallow it mid-sentence.
+    var isEditingText = false
+
     var showSafeArea = SettingsStore.loadShowSafeArea() {
         didSet { SettingsStore.save(showSafeArea: showSafeArea) }
     }
+
+    var confirmDestructiveActions = SettingsStore.loadConfirmDestructive() {
+        didSet { SettingsStore.save(confirmDestructive: confirmDestructiveActions) }
+    }
+
+    var appearance = SettingsStore.loadAppearance() {
+        didSet {
+            SettingsStore.save(appearance: appearance)
+            appearance.apply()
+        }
+    }
+
+    /// Width of the style sidebar, dragged by the splitter beside it. Saved on
+    /// drag end rather than on every frame.
+    var styleSidebarWidth = SettingsStore.loadStyleSidebarWidth()
+
+    func persistStyleSidebarWidth() {
+        SettingsStore.save(styleSidebarWidth: styleSidebarWidth)
+    }
+
+    /// The destructive action waiting on a confirmation sheet, if any.
+    var pendingConfirmation: ConfirmationRequest?
 
     private struct CachedRender {
         let signature: Int
@@ -62,7 +96,9 @@ final class StoryProject {
     }
 
     /// Rendered bitmaps keyed by block id, re-rendered only when a block's
-    /// text or style actually changes—drags never trigger a re-render.
+    /// text or style actually changes—drags never trigger a re-render. The
+    /// signature is a per-process hash, which is fine because it is only ever
+    /// compared against another signature from the same run.
     private var renderCache: [UUID: CachedRender] = [:]
     private var lastSavedStyle: OverlayStyle
 
@@ -72,11 +108,20 @@ final class StoryProject {
     /// When the current export began, used to estimate time remaining.
     private(set) var exportStartedAt: Date?
     private var exportTask: Task<Void, Never>?
+    private var loadTask: Task<Void, Never>?
 
     private var timeObserver: Any?
     private var endObserver: NSObjectProtocol?
 
     static let allowedExtensions: Set<String> = ["mp4", "mov", "m4v"]
+
+    /// The same rule as `allowedExtensions`, in the form the open panel wants,
+    /// so a file the panel offers is never one the drop handler would reject.
+    static let allowedContentTypes: [UTType] = {
+        var types: [UTType] = [.mpeg4Movie, .quickTimeMovie]
+        if let m4v = UTType("com.apple.m4v-video") { types.append(m4v) }
+        return types
+    }()
 
     init() {
         let style = SettingsStore.loadStyle()
@@ -112,6 +157,10 @@ final class StoryProject {
         video != nil && blocks.count < Self.maxBlocks
     }
 
+    var hasStoryText: Bool {
+        blocks.contains(where: \.hasText)
+    }
+
     /// Adds a block inheriting the current block's style, dropped into
     /// whichever third of the frame sits farthest from the existing blocks.
     func addBlock() {
@@ -126,10 +175,25 @@ final class StoryProject {
         selectedIndex = blocks.count - 1
     }
 
-    func removeSelectedBlock() {
+    private func removeSelectedBlock() {
         guard blocks.count > 1 else { return }
         blocks.remove(at: safeSelectedIndex)
         selectedIndex = 0
+    }
+
+    /// Moves the selected block by a step in normalized coordinates, clamped
+    /// the same way a drag is, so the keyboard and the mouse cannot put a
+    /// block anywhere the other could not.
+    func nudgeSelectedBlock(dx: CGFloat, dy: CGFloat) {
+        guard let video else { return }
+        let index = safeSelectedIndex
+        guard let overlay = overlay(for: blocks[index]) else { return }
+        let current = blocks[index].center
+        blocks[index].center = OverlayRenderer.clampedCenter(
+            CGPoint(x: current.x + dx, y: current.y + dy),
+            blockSize: overlay.pixelSize,
+            videoSize: video.displaySize
+        )
     }
 
     private func handleBlocksChange() {
@@ -167,20 +231,69 @@ final class StoryProject {
         renderCache = newCache
     }
 
+    // MARK: - Destructive actions
+
+    /// Every path that throws away typed text goes through one of these two
+    /// requests, so the confirmation can never be bypassed by adding a caller.
+    func requestClearVideo() {
+        guard confirmDestructiveActions, hasStoryText else {
+            clearVideo()
+            return
+        }
+        pendingConfirmation = ConfirmationRequest(action: .clearVideo)
+    }
+
+    func requestRemoveSelectedBlock() {
+        guard blocks.count > 1 else { return }
+        guard confirmDestructiveActions, blocks[safeSelectedIndex].hasText else {
+            removeSelectedBlock()
+            return
+        }
+        pendingConfirmation = ConfirmationRequest(action: .removeBlock)
+    }
+
+    func cancelConfirmation() {
+        pendingConfirmation = nil
+    }
+
+    func resolveConfirmation(suppressFuture: Bool) {
+        guard let request = pendingConfirmation else { return }
+        pendingConfirmation = nil
+        if suppressFuture {
+            confirmDestructiveActions = false
+        }
+        switch request.action {
+        case .clearVideo: clearVideo()
+        case .removeBlock: removeSelectedBlock()
+        }
+    }
+
     // MARK: - Loading
 
     func loadVideo(from url: URL) {
-        Task {
+        guard Self.isAcceptableVideo(url: url) else {
+            loadError = .unsupportedType
+            return
+        }
+        loadTask?.cancel()
+        loadTask = Task {
             do {
                 let info = try await VideoInfo.probe(url: url)
+                // A second drop landing while this probe ran wins; this one
+                // must not overwrite it on the way out.
+                try Task.checkCancellation()
                 video = info
                 player.replaceCurrentItem(with: AVPlayerItem(asset: AVURLAsset(url: url)))
                 currentTime = 0
                 isPlaying = false
                 installLoopObserver()
                 refreshOverlays()
+            } catch is CancellationError {
+                // Superseded by a newer load; leave the newer one alone.
+            } catch let error as VideoInfo.ProbeError {
+                loadError = error
             } catch {
-                loadErrorMessage = error.localizedDescription
+                loadError = .unreadable(error.localizedDescription)
             }
         }
     }
@@ -192,8 +305,10 @@ final class StoryProject {
     /// Unloads the video and returns to the drop screen, clearing the story
     /// text back to a single empty block. Styling carries over, since those
     /// settings are meant to persist.
-    func clearVideo() {
+    private func clearVideo() {
         pause()
+        loadTask?.cancel()
+        loadTask = nil
         player.replaceCurrentItem(with: nil)
         if let endObserver {
             NotificationCenter.default.removeObserver(endObserver)
@@ -201,9 +316,10 @@ final class StoryProject {
         }
         video = nil
         currentTime = 0
+        // Setting `blocks` after `video` is already nil clears the render
+        // cache through `handleBlocksChange`.
         blocks = [OverlayBlock(style: selectedBlock.style)]
         selectedIndex = 0
-        renderCache = [:]
     }
 
     /// Loops playback at the end, matching how a Story behaves in Instagram.
@@ -262,6 +378,11 @@ final class StoryProject {
         video != nil && !placedOverlays.isEmpty && exportTask == nil
     }
 
+    var isExporting: Bool {
+        if case .exporting = exportPhase { return true }
+        return false
+    }
+
     /// Prompts for a destination, then runs the export off the main actor.
     func beginExport() {
         guard let video else { return }
@@ -303,6 +424,7 @@ final class StoryProject {
 
     func cancelExport() {
         exportTask?.cancel()
+        exportTask = nil
         exportPhase = .idle
     }
 

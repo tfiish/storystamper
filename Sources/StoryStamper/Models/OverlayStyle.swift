@@ -11,6 +11,9 @@ struct RGBAColor: Codable, Hashable, Sendable {
 
     static let white = RGBAColor(red: 1, green: 1, blue: 1, alpha: 1)
     static let black = RGBAColor(red: 0, green: 0, blue: 0, alpha: 1)
+    /// The two grays sit at even thirds between black and white (0x55, 0xAA).
+    static let darkGray = RGBAColor(red: 1 / 3, green: 1 / 3, blue: 1 / 3, alpha: 1)
+    static let lightGray = RGBAColor(red: 2 / 3, green: 2 / 3, blue: 2 / 3, alpha: 1)
 
     init(red: Double, green: Double, blue: Double, alpha: Double) {
         self.red = red
@@ -59,6 +62,17 @@ enum FontChoice: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// The letter shown in the segmented picker, set in the face it selects,
+    /// so the control previews its own effect.
+    var sampleFont: Font {
+        switch self {
+        case .bold: return .system(size: TextSize.regular, weight: .heavy)
+        case .regular: return .system(size: TextSize.regular, weight: .regular)
+        case .serif: return .system(size: TextSize.regular, weight: .bold, design: .serif)
+        case .monospaced: return .system(size: TextSize.regular, weight: .medium, design: .monospaced)
+        }
+    }
+
     func nsFont(size: CGFloat) -> NSFont {
         switch self {
         case .bold:
@@ -93,6 +107,15 @@ enum TextAlignmentChoice: String, Codable, CaseIterable, Identifiable, Sendable 
         }
     }
 
+    /// The picker shows only the glyph, so this is what a screen reader reads.
+    var displayName: String {
+        switch self {
+        case .left: return "Left"
+        case .center: return "Center"
+        case .right: return "Right"
+        }
+    }
+
     var symbolName: String {
         switch self {
         case .left: return "text.alignleft"
@@ -116,10 +139,6 @@ struct OverlayStyle: Codable, Hashable, Sendable {
     var backgroundOpacity: Double = 0.55
     var padding: Double = 28
 
-    var effectiveBackgroundAlpha: Double {
-        backgroundEnabled ? backgroundOpacity : 0
-    }
-
     init() {}
 
     /// Decoded leniently so settings saved by an older version keep whatever
@@ -138,18 +157,24 @@ struct OverlayStyle: Codable, Hashable, Sendable {
     }
 }
 
+/// One entry in a row of one-click color presets.
+struct ColorSwatch: Identifiable, Hashable, Sendable {
+    let name: String
+    let color: RGBAColor
+
+    var id: String { name }
+}
+
 /// Ready-made colors offered as one-click swatches beside the color pickers.
 enum ColorPreset {
-    static let black = RGBAColor(red: 0, green: 0, blue: 0, alpha: 1)
-    static let white = RGBAColor(red: 1, green: 1, blue: 1, alpha: 1)
-    /// The two grays sit at even thirds between black and white (0x55, 0xAA).
-    static let darkGray = RGBAColor(red: 1 / 3, green: 1 / 3, blue: 1 / 3, alpha: 1)
-    static let lightGray = RGBAColor(red: 2 / 3, green: 2 / 3, blue: 2 / 3, alpha: 1)
-
-    static let background: [(name: String, color: RGBAColor)] = [
-        ("Black", black), ("Dark Gray", darkGray), ("Light Gray", lightGray), ("White", white),
+    static let background: [ColorSwatch] = [
+        ColorSwatch(name: "Black", color: .black),
+        ColorSwatch(name: "Dark Gray", color: .darkGray),
+        ColorSwatch(name: "Light Gray", color: .lightGray),
+        ColorSwatch(name: "White", color: .white),
     ]
-    static let text: [(name: String, color: RGBAColor)] = [
-        ("White", white), ("Black", black),
+    static let text: [ColorSwatch] = [
+        ColorSwatch(name: "White", color: .white),
+        ColorSwatch(name: "Black", color: .black),
     ]
 }

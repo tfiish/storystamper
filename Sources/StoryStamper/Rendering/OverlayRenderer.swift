@@ -30,6 +30,12 @@ enum OverlayRenderer {
     /// Extra transparent margin around the text so glyphs never clip at the
     /// bitmap edge; visually part of the padding.
     private static let bleed: CGFloat = 6
+    /// The background box's corner radius tracks its padding, held between
+    /// bounds that stop a small box looking like a pill and a large one
+    /// looking square. Video pixels, so deliberately not `Radius`.
+    private static let cornerRadiusRatio: CGFloat = 0.6
+    private static let minCornerRadius: CGFloat = 6
+    private static let maxCornerRadius: CGFloat = 24
 
     // MARK: - Text block
 
@@ -60,7 +66,7 @@ enum OverlayRenderer {
         defer { NSGraphicsContext.current = previous }
 
         if style.backgroundEnabled {
-            let alpha = style.effectiveBackgroundAlpha
+            let alpha = style.backgroundOpacity
             let radius = cornerRadius(for: style, blockSize: blockSize)
             let path = NSBezierPath(
                 roundedRect: CGRect(origin: .zero, size: blockSize),
@@ -177,7 +183,7 @@ enum OverlayRenderer {
     }
 
     private static func cornerRadius(for style: OverlayStyle, blockSize: CGSize) -> CGFloat {
-        let base = min(max(style.padding * 0.6, 6), 24)
+        let base = min(max(style.padding * cornerRadiusRatio, minCornerRadius), maxCornerRadius)
         return min(base, min(blockSize.width, blockSize.height) / 2)
     }
 

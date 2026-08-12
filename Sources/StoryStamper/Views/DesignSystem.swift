@@ -2,17 +2,18 @@ import SwiftUI
 
 // The single source of truth for every number the interface draws with.
 // If a view needs a value that is not here, add it here first rather than
-// inlining a literal—that is how drift starts.
+// inlining a literal—that is how drift starts. That rule covers color alpha,
+// motion, and stroke patterns as much as it covers geometry.
 
 // MARK: - Type
 
-/// The only text sizes allowed in the app.
+/// The only text sizes allowed in the app. Every entry has a `Font` below it;
+/// a size with no font is a size nothing can reach, so the two lists stay
+/// exactly in step.
 enum TextSize {
-    static let micro: CGFloat = 8
     static let small: CGFloat = 10
     static let regular: CGFloat = 13
     static let title: CGFloat = 16
-    static let display: CGFloat = 21
 }
 
 extension Font {
@@ -53,6 +54,38 @@ enum BorderWidth {
     static let strong: CGFloat = 3
 }
 
+enum Stroke {
+    /// Dash pattern for the selected-block ring.
+    static let selectionDash: [CGFloat] = [5, 4]
+}
+
+// MARK: - Color alpha
+
+/// Named alpha values. The app draws over video, where a handful of washes and
+/// hairlines do all the work; naming them stops four near-identical numbers
+/// from accumulating for the same visual job.
+enum Opacity {
+    /// Dark backing behind a control, or a drop shadow, over video.
+    static let scrim: Double = 0.5
+    /// Large dimmed region that must stay see-through, such as a safe-area zone.
+    static let wash: Double = 0.25
+    /// Thin light rule drawn over video.
+    static let rule: Double = 0.5
+    /// Border on a control sitting against the window background.
+    static let border: Double = 0.3
+    /// Selection ring around the active block.
+    static let ring: Double = 0.8
+}
+
+// MARK: - Motion
+
+enum Motion {
+    /// Guides appearing and disappearing: fast enough to feel instant.
+    static let quick: Double = 0.1
+    /// Interpolation between FFmpeg's twice-a-second progress reports.
+    static let progress: Double = 0.6
+}
+
 // MARK: - Icons
 
 /// SF Symbol sizes. Kept separate from `TextSize` because glyphs are balanced
@@ -65,12 +98,42 @@ enum IconSize {
     static let emptyState: CGFloat = 44
 }
 
+// MARK: - Interaction
+
+/// Gesture tolerances and step sizes. These are hit distances and increments
+/// rather than layout, so they are deliberately not held to the 4-point grid.
+enum Interaction {
+    /// How close, in preview points, a drag must come to a midline before it
+    /// snaps. Measured on screen so the feel is the same at any window size.
+    static let snapTolerance: CGFloat = 9
+    /// Arrow-key step, in normalized video coordinates—roughly 4 px on a
+    /// 1080×1920 frame.
+    static let nudgeFine: CGFloat = 0.002
+    /// Shift-arrow step, for crossing the frame quickly.
+    static let nudgeCoarse: CGFloat = 0.02
+}
+
 // MARK: - Component sizes
 
 enum Metrics {
-    static let sidebarWidth: CGFloat = 300
+    /// The source sidebar is fixed and deliberately narrow: it holds four
+    /// lines of metadata and two toggles, and every point it gives up goes to
+    /// the preview, which is the thing being judged.
+    static let sourceSidebarWidth: CGFloat = 200
+    /// The style sidebar is user-resizable within these bounds. Below the
+    /// lower bound the slider-plus-readout rows and the padding hint start
+    /// wrapping; above the upper bound it is just taking space from the video.
+    static let styleSidebarWidth: CGFloat = 300
+    static let minStyleSidebarWidth: CGFloat = 260
+    static let maxStyleSidebarWidth: CGFloat = 380
+    static let styleSidebarRange: ClosedRange<CGFloat> = minStyleSidebarWidth...maxStyleSidebarWidth
+
     static let minPreviewWidth: CGFloat = 360
-    static let minWindowWidth: CGFloat = 1000
+    /// Derived, so changing a sidebar or the preview minimum can never leave
+    /// the window able to squeeze the preview below its own minimum.
+    static let minWindowWidth: CGFloat = sourceSidebarWidth + minStyleSidebarWidth + minPreviewWidth + BorderWidth.hairline * 2
+    /// Tall enough that neither sidebar's form needs to scroll with three text
+    /// blocks present, which is the tallest the right sidebar ever gets.
     static let minWindowHeight: CGFloat = 640
     static let defaultWindowWidth: CGFloat = 1240
     static let defaultWindowHeight: CGFloat = 820
@@ -84,6 +147,8 @@ enum Metrics {
     static let textEditorMinHeight: CGFloat = 100
 
     static let sheetMinWidth: CGFloat = 340
-    static let aboutWidth: CGFloat = 420
+    static let sheetWidth: CGFloat = 420
+    /// Paragraph measure for wrapped body copy inside a sheet.
+    static let sheetTextWidth: CGFloat = 280
     static let progressWidth: CGFloat = 280
 }

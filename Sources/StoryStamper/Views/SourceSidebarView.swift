@@ -1,10 +1,19 @@
 import SwiftUI
 
-/// Left sidebar: what is being stamped—the video, the words, and the preview
-/// guides. Styling lives opposite in `StyleSidebarView`.
+/// Left sidebar: what is being stamped—the video, and how the app presents
+/// itself while you work. Styling lives opposite in `StyleSidebarView`.
 struct SourceSidebarView: View {
     @Bindable var project: StoryProject
-    @State private var showingAbout = false
+    @State private var footerSheet: FooterSheet?
+
+    /// One sheet slot for the footer's two buttons, since two
+    /// `.sheet(isPresented:)` modifiers on one view contend with each other.
+    private enum FooterSheet: String, Identifiable {
+        case about
+        case settings
+
+        var id: String { rawValue }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -16,61 +25,93 @@ struct SourceSidebarView: View {
 
             footer
         }
-        .frame(width: Metrics.sidebarWidth)
-        .sheet(isPresented: $showingAbout) {
-            AboutView()
+        .frame(width: Metrics.sourceSidebarWidth)
+        .sheet(item: $footerSheet) { sheet in
+            switch sheet {
+            case .about: AboutView()
+            case .settings: SettingsView(project: project)
+            }
         }
     }
 
     private var footer: some View {
-        VStack(spacing: Spacing.medium) {
-            Button("About") { showingAbout = true }
-                .controlSize(.small)
-            Text("\(AppInfo.displayName) v\(AppInfo.version)")
-                .font(.appSmall)
-                .foregroundStyle(.tertiary)
+        BarStrip {
+            VStack(spacing: Spacing.small) {
+                HStack(spacing: Spacing.small) {
+                    Button("Settings…") { footerSheet = .settings }
+                        .controlSize(.small)
+                    Button("About") { footerSheet = .about }
+                        .controlSize(.small)
+                }
+                Text("\(AppInfo.displayName) v\(AppInfo.version)")
+                    .font(.appSmall)
+                    .foregroundStyle(.tertiary)
+            }
         }
-        .frame(maxWidth: .infinity)
-        .padding(.top, Spacing.small)
-        .padding(.bottom, Spacing.medium)
     }
 
     private var videoSection: some View {
         Section("Video") {
             if let video = project.video {
-                LabeledContent("File") {
+                // Stacked rather than label-and-value rows, because at this
+                // width a two-column row would truncate both halves.
+                VStack(alignment: .leading, spacing: Spacing.hair) {
                     Text(video.filename)
                         .truncationMode(.middle)
                         .lineLimit(1)
                         .help(video.url.path)
+                    Text(summary(for: video))
+                        .font(.appSmall)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
-                LabeledContent("Size") {
-                    Text("\(Int(video.displaySize.width)) × \(Int(video.displaySize.height))")
-                }
-                if video.nominalFrameRate > 0 {
-                    LabeledContent("Frame rate") {
-                        Text(String(format: "%.5g fps", video.nominalFrameRate))
-                    }
-                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
                 Button("Replace Video…") {
                     chooseVideo(for: project)
                 }
             } else {
                 Text("No video loaded")
                     .foregroundStyle(.secondary)
-                Button("Choose Video…") {
+                Button("Choose Video") {
                     chooseVideo(for: project)
                 }
             }
         }
     }
 
+    /// Dimensions, length, and frame rate on one line—the three things worth
+    /// glancing at, in the order you would ask for them.
+    private func summary(for video: VideoInfo) -> String {
+        var parts = [
+            "\(Int(video.displaySize.width)) × \(Int(video.displaySize.height))",
+            video.durationText,
+        ]
+        if video.nominalFrameRate > 0 {
+            parts.append(String(format: "%.5g fps", video.nominalFrameRate))
+        }
+        return parts.joined(separator: " · ")
+    }
+
     private var previewSection: some View {
         Section("Preview") {
-            Toggle("Show story-safe areas", isOn: $project.showSafeArea)
-            Text("Approximates where Instagram's UI covers a Story on the top and bottom.")
+            Toggle("Show story-safe area guides", isOn: $project.showSafeArea)
+            Text("Shows approximately where Instagram's UI covers a Story at the top and bottom. The guides never appear in the export.")
                 .font(.appSmall)
                 .foregroundStyle(.secondary)
+
+            LabeledContent("Appearance") {
+                Picker("Appearance", selection: $project.appearance) {
+                    ForEach(AppearanceChoice.allCases) { choice in
+                        Label(choice.displayName, systemImage: choice.symbolName)
+                            .labelStyle(.iconOnly)
+                            .help(choice.help)
+                            .tag(choice)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
         }
     }
 }

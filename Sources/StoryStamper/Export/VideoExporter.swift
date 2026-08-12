@@ -3,6 +3,12 @@ import Foundation
 
 /// Orchestrates an export: renders the full-resolution overlay PNG, invokes
 /// FFmpeg to composite and re-encode, and cleans up temporary files.
+///
+/// FFmpeg encodes into the scratch directory, never straight to the
+/// destination. The finished file is moved into place only after FFmpeg exits
+/// cleanly, so a cancel, a failure, or a quit leaves nothing behind at the
+/// location the user picked—the `defer` below sweeps the partial encode along
+/// with the overlay.
 enum VideoExporter {
     static func export(
         videoInfo: VideoInfo,
@@ -24,12 +30,11 @@ enum VideoExporter {
             throw ExportError.overlayRenderFailed
         }
 
-        let tempDirectory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("StoryStamper-\(UUID().uuidString)", isDirectory: true)
-        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+        let session = try ExportScratch.makeSession()
+        defer { try? FileManager.default.removeItem(at: session) }
 
-        let overlayURL = tempDirectory.appendingPathComponent("overlay.png")
+        let overlayURL = session.appendingPathComponent("overlay.png")
+        let stagedURL = session.appendingPathComponent("output.mp4")
         try OverlayRenderer.writePNG(canvas, to: overlayURL)
 
         let useHardware = FFmpegService.supportsVideoToolbox(executable: ffmpeg)
@@ -38,13 +43,33 @@ enum VideoExporter {
             arguments: arguments(
                 videoURL: videoInfo.url,
                 overlayURL: overlayURL,
-                outputURL: outputURL,
+                outputURL: stagedURL,
                 useHardwareEncoder: useHardware,
+                hasAudio: videoInfo.hasAudio,
                 copyAudio: videoInfo.audioIsAAC
             ),
             durationSeconds: videoInfo.duration,
             onProgress: onProgress
         )
+
+        // Checked before the move as well as inside `run`, so a cancel landing
+        // in the gap cannot promote a partial encode.
+        try Task.checkCancellation()
+        try install(stagedURL, at: outputURL)
+    }
+
+    /// Moves the finished encode into place. The save panel has already
+    /// confirmed any overwrite, so replacing an existing file here is expected.
+    private static func install(_ staged: URL, at destination: URL) throws {
+        let manager = FileManager.default
+        do {
+            if manager.fileExists(atPath: destination.path) {
+                try manager.removeItem(at: destination)
+            }
+            try manager.moveItem(at: staged, to: destination)
+        } catch {
+            throw ExportError.couldNotSaveOutput(error.localizedDescription)
+        }
     }
 
     /// Builds the FFmpeg argument array. FFmpeg applies rotation metadata
@@ -59,6 +84,7 @@ enum VideoExporter {
         overlayURL: URL,
         outputURL: URL,
         useHardwareEncoder: Bool,
+        hasAudio: Bool,
         copyAudio: Bool
     ) -> [String] {
         var args = [
@@ -69,8 +95,11 @@ enum VideoExporter {
             "-filter_complex",
             "[0:v][1:v]overlay=0:0:format=auto,crop=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p,sidedata=mode=delete:type=DISPLAYMATRIX[v]",
             "-map", "[v]",
-            "-map", "0:a?",
         ]
+
+        if hasAudio {
+            args += ["-map", "0:a?"]
+        }
 
         if useHardwareEncoder {
             // Apple's media engine, ~30x faster than libx264 on 4K. q:v is a
@@ -80,7 +109,11 @@ enum VideoExporter {
             args += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"]
         }
 
-        args += copyAudio ? ["-c:a", "copy"] : ["-c:a", "aac", "-b:a", "192k"]
+        if hasAudio {
+            args += copyAudio ? ["-c:a", "copy"] : ["-c:a", "aac", "-b:a", "192k"]
+        } else {
+            args += ["-an"]
+        }
 
         args += [
             "-movflags", "+faststart",

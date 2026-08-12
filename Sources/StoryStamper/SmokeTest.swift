@@ -20,7 +20,7 @@ enum SmokeTest {
         Task.detached {
             do {
                 let info = try await VideoInfo.probe(url: inputURL)
-                print("probe: \(Int(info.displaySize.width))x\(Int(info.displaySize.height)), \(String(format: "%.2f", info.duration))s, \(info.nominalFrameRate) fps, audio: \(info.hasAudio)")
+                print("probe: \(Int(info.displaySize.width))x\(Int(info.displaySize.height)), \(String(format: "%.2f", info.duration))s, \(info.nominalFrameRate) fps, audio: \(info.hasAudio ? (info.audioIsAAC ? "aac, copied" : "re-encoded") : "none")")
 
                 guard let mainBlock = OverlayRenderer.renderBlock(text: text, style: OverlayStyle(), videoSize: info.displaySize) else {
                     fputs("SMOKE FAIL: overlay render returned nil\n", stderr)

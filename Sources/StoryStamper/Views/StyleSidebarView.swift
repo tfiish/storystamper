@@ -4,6 +4,7 @@ import SwiftUI
 /// action. All controls edit the selected block.
 struct StyleSidebarView: View {
     @Bindable var project: StoryProject
+    @FocusState private var textEditorFocused: Bool
 
     /// Roughly what Instagram puts around Story text, in the same 1080-wide
     /// reference units the padding slider uses.
@@ -20,14 +21,19 @@ struct StyleSidebarView: View {
 
             exportFooter
         }
-        .frame(width: Metrics.sidebarWidth)
+        .frame(width: project.styleSidebarWidth)
+        // The transport bar gives up the space bar while this is true, so a
+        // space typed into the story text stays a space.
+        .onChange(of: textEditorFocused) { _, focused in
+            project.isEditingText = focused
+        }
     }
 
     private var textSection: some View {
         Section("Story Text") {
             if project.blocks.count > 1 {
                 Picker("Block", selection: $project.selectedIndex) {
-                    ForEach(0..<project.blocks.count, id: \.self) { index in
+                    ForEach(Array(project.blocks.enumerated()), id: \.element.id) { index, _ in
                         Text("Block \(index + 1)").tag(index)
                     }
                 }
@@ -39,6 +45,8 @@ struct StyleSidebarView: View {
                 .font(.appRegular)
                 .frame(minHeight: Metrics.textEditorMinHeight)
                 .scrollContentBackground(.hidden)
+                .focused($textEditorFocused)
+                .accessibilityLabel("Story text")
 
             HStack {
                 Button("Add Text Block") {
@@ -46,14 +54,19 @@ struct StyleSidebarView: View {
                 }
                 .disabled(!project.canAddBlock)
 
-                if project.blocks.count > 1 {
-                    Button("Remove", role: .destructive) {
-                        project.removeSelectedBlock()
-                    }
+                Button("Remove", role: .destructive) {
+                    project.requestRemoveSelectedBlock()
                 }
+                .disabled(project.blocks.count < 2)
             }
 
-            Text("Drag a block on the preview to position it. It snaps to the midlines.")
+            if project.video == nil {
+                Text("Load a video before adding text blocks—a block is positioned against the video's frame.")
+                    .font(.appSmall)
+                    .foregroundStyle(.secondary)
+            }
+
+            Text("Drag or use arrow keys to reposition. Blocks snap to the midlines.")
                 .font(.appSmall)
                 .foregroundStyle(.secondary)
         }
@@ -61,27 +74,47 @@ struct StyleSidebarView: View {
 
     private var styleSection: some View {
         Section("Text Style") {
-            Picker("Font", selection: $project.selectedBlock.style.font) {
-                ForEach(FontChoice.allCases) { choice in
-                    Text(choice.displayName).tag(choice)
+            LabeledContent("Font") {
+                Picker("Font", selection: $project.selectedBlock.style.font) {
+                    ForEach(FontChoice.allCases) { choice in
+                        // The sample letter is set in the face it selects, so
+                        // the control shows its own effect.
+                        Text(verbatim: "A")
+                            .font(choice.sampleFont)
+                            .help(choice.displayName)
+                            .accessibilityLabel(choice.displayName)
+                            .tag(choice)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
 
             LabeledContent("Size") {
                 HStack(spacing: Spacing.small) {
                     Slider(value: $project.selectedBlock.style.fontSize, in: 24...160)
+                        .accessibilityLabel("Text size")
+                        .accessibilityValue("\(Int(project.selectedBlock.style.fontSize))")
                     Text("\(Int(project.selectedBlock.style.fontSize))")
                         .font(.appSmallDigits)
                         .frame(width: Metrics.readoutWidth, alignment: .trailing)
                 }
             }
 
-            Picker("Alignment", selection: $project.selectedBlock.style.alignment) {
-                ForEach(TextAlignmentChoice.allCases) { choice in
-                    Image(systemName: choice.symbolName).tag(choice)
+            LabeledContent("Alignment") {
+                Picker("Alignment", selection: $project.selectedBlock.style.alignment) {
+                    ForEach(TextAlignmentChoice.allCases) { choice in
+                        // Label rather than a bare Image so the segment carries
+                        // a name for VoiceOver while still showing only the glyph.
+                        Label(choice.displayName, systemImage: choice.symbolName)
+                            .labelStyle(.iconOnly)
+                            .help(choice.displayName)
+                            .tag(choice)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
-            .pickerStyle(.segmented)
 
             LabeledContent("Color") {
                 ColorRow(presets: ColorPreset.text, selection: styleBinding(\.textColor))
@@ -104,6 +137,8 @@ struct StyleSidebarView: View {
                     HStack(spacing: Spacing.small) {
                         // 100% produces what used to be the "Solid" mode.
                         Slider(value: $project.selectedBlock.style.backgroundOpacity, in: 0.1...1)
+                            .accessibilityLabel("Background opacity")
+                            .accessibilityValue("\(Int(project.selectedBlock.style.backgroundOpacity * 100)) percent")
                         Text("\(Int(project.selectedBlock.style.backgroundOpacity * 100))%")
                             .font(.appSmallDigits)
                             .frame(width: Metrics.readoutWidth, alignment: .trailing)
@@ -113,6 +148,8 @@ struct StyleSidebarView: View {
                 LabeledContent("Padding") {
                     HStack(spacing: Spacing.small) {
                         Slider(value: $project.selectedBlock.style.padding, in: 0...64)
+                            .accessibilityLabel("Background padding")
+                            .accessibilityValue("\(Int(project.selectedBlock.style.padding))")
                         Text("\(Int(project.selectedBlock.style.padding))")
                             .font(.appSmallDigits)
                             .frame(width: Metrics.readoutWidth, alignment: .trailing)
@@ -120,7 +157,7 @@ struct StyleSidebarView: View {
                 }
 
                 HStack(spacing: 0) {
-                    Text("Instagram native padding is approximately ")
+                    Text("Instagram's native padding is approximately ")
                     Button {
                         project.selectedBlock.style.padding = Self.instagramPadding
                     } label: {
@@ -130,6 +167,7 @@ struct StyleSidebarView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(.tint)
                     .help("Set padding to \(Int(Self.instagramPadding))")
+                    .accessibilityLabel("Set padding to \(Int(Self.instagramPadding))")
                     Text(".")
                 }
                 .font(.appSmall)
@@ -140,7 +178,7 @@ struct StyleSidebarView: View {
             // Label first, checkbox after it.
             HStack(spacing: Spacing.small) {
                 Text("Text Background")
-                Toggle("", isOn: $project.selectedBlock.style.backgroundEnabled)
+                Toggle("Text Background", isOn: $project.selectedBlock.style.backgroundEnabled)
                     .toggleStyle(.checkbox)
                     .labelsHidden()
                 Spacer()
@@ -149,31 +187,31 @@ struct StyleSidebarView: View {
     }
 
     private var exportFooter: some View {
-        VStack(spacing: Spacing.small) {
-            Button {
-                project.beginExport()
-            } label: {
-                Text("Export Video")
-                    .frame(maxWidth: .infinity)
-            }
-            .controlSize(.large)
-            .buttonStyle(.borderedProminent)
-            .disabled(!project.canExport)
+        BarStrip {
+            VStack(spacing: Spacing.small) {
+                Button {
+                    project.beginExport()
+                } label: {
+                    Text("Export Video…")
+                        .frame(maxWidth: .infinity)
+                }
+                .controlSize(.large)
+                .buttonStyle(.borderedProminent)
+                .disabled(!project.canExport)
 
-            if project.video == nil {
-                footerHint("Load a video to export.")
-            } else if project.placedOverlays.isEmpty {
-                footerHint("Enter story text to export.")
+                if project.video == nil {
+                    footerHint("Load a video to export.")
+                } else if project.placedOverlays.isEmpty {
+                    footerHint("Enter story text to export.")
+                }
             }
         }
-        .padding(Spacing.medium)
-        .background(.bar)
     }
 
     private func footerHint(_ message: String) -> some View {
         Text(message)
             .font(.appSmall)
-            .foregroundStyle(.tertiary)
+            .foregroundStyle(.secondary)
     }
 
     private func styleBinding(_ keyPath: WritableKeyPath<OverlayStyle, RGBAColor>) -> Binding<RGBAColor> {
@@ -187,32 +225,35 @@ struct StyleSidebarView: View {
 /// One-click preset swatches followed by the system color picker for anything
 /// else. The active preset gets a ring.
 private struct ColorRow: View {
-    let presets: [(name: String, color: RGBAColor)]
+    let presets: [ColorSwatch]
     @Binding var selection: RGBAColor
 
     var body: some View {
         HStack(spacing: Spacing.small) {
-            ForEach(presets, id: \.name) { preset in
+            ForEach(presets) { preset in
+                let isSelected = selection.matches(preset.color)
                 Button {
                     selection = preset.color
                 } label: {
                     Circle()
                         .fill(preset.color.color)
                         .frame(width: Metrics.swatch, height: Metrics.swatch)
-                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.3), lineWidth: BorderWidth.hairline))
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(Opacity.border), lineWidth: BorderWidth.hairline))
                         .overlay {
                             Circle()
                                 .strokeBorder(Color.accentColor, lineWidth: BorderWidth.emphasis)
                                 .padding(-Spacing.tight)
-                                .opacity(selection.matches(preset.color) ? 1 : 0)
+                                .opacity(isSelected ? 1 : 0)
                         }
                 }
                 .buttonStyle(.plain)
                 .help(preset.name)
+                .accessibilityLabel(preset.name)
+                .accessibilityAddTraits(isSelected ? [.isSelected] : [])
             }
 
             ColorPicker(
-                "",
+                "Custom color",
                 selection: Binding(
                     get: { selection.color },
                     set: { selection = RGBAColor(color: $0) }
