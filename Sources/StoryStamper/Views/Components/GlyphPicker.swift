@@ -5,9 +5,8 @@ import SwiftUI
 /// Hand-built rather than a `Picker(.segmented)` for three reasons a segmented
 /// picker cannot give us. It reduces a `Text` to a plain segment label and
 /// applies its own font, which is why four styled specimens came out
-/// identical. It offers no way to attach hover to an individual segment, so
-/// naming a glyph means the system tooltip and its unsettable delay. And it
-/// draws no focus ring we can reach.
+/// identical. It draws no focus ring we can reach. And it cannot caption
+/// itself.
 ///
 /// A caption under the row names the current choice outright, because a line
 /// of symbols never says in words which one is on.
@@ -30,16 +29,20 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
         }
     }
 
-    /// Laid out as one cell per segment so the name sits centered under the
-    /// glyph it belongs to. The cells are placeholders and the text is drawn
-    /// as an overlay at its natural width, so a long name like "Monospaced"
-    /// stays on one line instead of being squeezed into a 30-point column.
+    /// Laid out as one cell per segment so the name sits under the glyph it
+    /// belongs to. The cells are placeholders and the text is drawn over them
+    /// at its natural width, so a long name stays on one line rather than
+    /// being squeezed into a 30-point column.
+    ///
+    /// Interior names center on their segment. The first and last pin to the
+    /// outer edge instead, so they grow inward—centering those would push the
+    /// text past the control's own bounds, where the row around it clips.
     private var caption: some View {
         HStack(spacing: BorderWidth.hairline) {
             ForEach(items, id: \.self) { item in
                 Color.clear
                     .frame(maxWidth: .infinity)
-                    .overlay {
+                    .overlay(alignment: captionAlignment(for: item)) {
                         if item == selection {
                             Text(name(item))
                                 .font(.appSmall)
@@ -52,6 +55,13 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
         .padding(.horizontal, BorderWidth.emphasis)
         .frame(height: Metrics.captionHeight)
         .accessibilityHidden(true)
+    }
+
+    private func captionAlignment(for item: Value) -> Alignment {
+        guard let index = items.firstIndex(of: item) else { return .center }
+        if index == items.startIndex { return .leading }
+        if index == items.index(before: items.endIndex) { return .trailing }
+        return .center
     }
 
     private var segments: some View {
@@ -97,7 +107,6 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
             }
             .contentShape(Rectangle())
             .onTapGesture { selection = item }
-            .hoverLabel(name(item))
             .accessibilityHidden(true)
     }
 

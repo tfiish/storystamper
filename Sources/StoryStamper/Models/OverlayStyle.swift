@@ -64,7 +64,7 @@ enum FontChoice: String, Codable, CaseIterable, Identifiable, Sendable {
         case .bold: return "Bold"
         case .regular: return "Regular"
         case .serif: return "Serif"
-        case .monospaced: return "Monospaced"
+        case .monospaced: return "Monospace"
         }
     }
 

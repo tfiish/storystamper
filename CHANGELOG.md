@@ -2,6 +2,11 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.8.1 — 2026-08-12
+
+- The monospaced font is now called Monospace, and the names under the Font, Alignment, and Theme pickers no longer run past the edge of the control and get clipped. The first and last names grow inward from their edge rather than centering past it.
+- Removed the hover labels from those three pickers. The name underneath already says which option is selected, so the tooltip repeated it.
+
 ## 1.8.0 — 2026-08-12
 
 - **Fixed: the X cleared a loaded video without asking**, even with Confirm before deletion switched on, whenever nothing had been typed yet. The setting now decides on its own whether to ask, which is what its description always promised.
