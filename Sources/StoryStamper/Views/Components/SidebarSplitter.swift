@@ -3,8 +3,8 @@ import SwiftUI
 
 /// The divider beside the style sidebar, made draggable. The sidebar resizes
 /// within a clamped range rather than collapsing to nothing, because every
-/// control in it—slider plus readout, segmented pickers, the padding hint—has
-/// a width below which it starts wrapping badly.
+/// control in it—slider plus readout, segmented pickers, the color rows—has a
+/// width below which it starts wrapping badly.
 ///
 /// Reachable by keyboard as well as by mouse. Sidebar width is the one thing
 /// the app can do that has no menu item, so without this it would be the one

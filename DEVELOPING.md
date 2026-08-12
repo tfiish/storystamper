@@ -188,7 +188,7 @@ That is enforced rather than remembered. `./Scripts/check-style.sh` reads every 
 | `IconSize` | 9, 12, 14, 16, 26, 34, 44 | Glyphs, including font specimens |
 | `Interaction` | named | Snap tolerance and arrow-key steps |
 | `Metrics` | named | Component sizes: sidebars, swatch, readout, sheets |
-| `Instagram` | named | Where Instagram's UI covers a Story, and its text padding |
+| `Instagram` | named | Where Instagram's UI covers a Story |
 
 Use the `Font` helpers (`.appSmall`, `.appSmallDigits`, `.appRegular`, `.appRegularBold`, `.appTitle`) rather than SwiftUI's semantic styles, whose sizes fall off the scale (`.callout` is 12 pt, `.title3` is 15 pt).
 

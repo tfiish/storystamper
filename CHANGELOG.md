@@ -2,6 +2,12 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 2.1.0 — 2026-08-12
+
+- **The "Instagram native padding: 20" line under the padding slider is gone.** Nothing ever measured Instagram to get that number, so the app should not have said it did. Twenty is a good place to start, which is all it ever was.
+- **A new install now opens on padding 20, pure white text, and pure black background**, at full opacity rather than 55%. That is the pairing that stays legible over any footage, and the opacity slider is there for softening it. Settings you have already saved are untouched—this is what the app looks like the first time it runs.
+- **The corners of the text background are a little rounder.** They were always rounded, but the radius follows the padding, and the preview shows the frame at about a third of its real size—so at the new smaller default the corner would have all but disappeared on screen. The radius now holds where it looked before.
+
 ## 2.0.2 — 2026-08-12
 
 - **The export readout no longer says "about a few seconds remaining."** "About" hedges a quantity, and "a few seconds" is already the hedge—it now reads "a few seconds remaining" on its own. Every estimate that names a number still keeps its "about."

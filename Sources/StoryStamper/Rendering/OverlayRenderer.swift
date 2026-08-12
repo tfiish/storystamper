@@ -18,8 +18,10 @@ enum OverlayRenderer {
     private static let bleed: CGFloat = 6
     /// The background box's corner radius tracks its padding, held between
     /// bounds that stop a small box looking like a pill and a large one
-    /// looking square. Video pixels, so deliberately not `Radius`.
-    private static let cornerRadiusRatio: CGFloat = 0.6
+    /// looking square. Video pixels, so deliberately not `Radius`. The ratio
+    /// is set so the corner survives the preview's downscale—a third of the
+    /// frame's width—where a radius tuned at full resolution reads as square.
+    private static let cornerRadiusRatio: CGFloat = 0.9
     private static let minCornerRadius: CGFloat = 6
     private static let maxCornerRadius: CGFloat = 24
     /// The shadow behind unboxed text. Video pixels rather than app chrome, so

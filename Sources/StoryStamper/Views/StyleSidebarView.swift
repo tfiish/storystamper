@@ -5,7 +5,6 @@ import SwiftUI
 struct StyleSidebarView: View {
     @Bindable var project: StoryProject
     @FocusState private var textEditorFocused: Bool
-    @FocusState private var paddingHintFocused: Bool
 
     private var noVideo: Bool { project.video == nil }
 
@@ -145,8 +144,6 @@ struct StyleSidebarView: View {
                     format: { "\(Int($0))" },
                     spokenName: "Background padding"
                 )
-
-                paddingHint
             }
             .disabled(!enabled)
         } header: {
@@ -159,28 +156,6 @@ struct StyleSidebarView: View {
                 Spacer()
             }
         }
-    }
-
-    private var paddingHint: some View {
-        HStack(spacing: 0) {
-            Text("Instagram native padding: ")
-            Button {
-                project.selectedBlock.style.padding = Instagram.textPadding
-            } label: {
-                Text("\(Int(Instagram.textPadding))")
-                    .underline()
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(.tint)
-            .focused($paddingHintFocused)
-            .focusEffectDisabled()
-            .focusHalo(paddingHintFocused, shape: RoundedRectangle(cornerRadius: Radius.small))
-            .hoverLabel("Set padding to \(Int(Instagram.textPadding))")
-            .accessibilityLabel("Set padding to \(Int(Instagram.textPadding))")
-            Text(".")
-        }
-        .font(.appSmall)
-        .foregroundStyle(.secondary)
     }
 
     private var exportFooter: some View {

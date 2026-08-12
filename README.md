@@ -62,7 +62,7 @@ Everything above is also in the menu bar, with shortcuts: Command-O to open or r
 ## Known limitations
 
 - At most three text blocks, each shown for the entire video—no animation, trimming, filters, or stickers, by design.
-- The safe-area guides, and the text padding default value, are reasonable approximations of Instagram's UI, not exact measurements.
+- The safe-area guides are a reasonable approximation of where Instagram's UI covers a Story, not an exact measurement.
 - Output is 8-bit SDR H.264, so HDR sources lose their HDR grade.
 - Export requires an FFmpeg installation unless one is bundled into the app.
 - The `.app` bundle is ad-hoc signed rather than notarized, so a build copied to another Mac needs right-click → Open the first time. Building it yourself avoids this entirely.

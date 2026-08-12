@@ -131,8 +131,10 @@ struct OverlayStyle: Codable, Hashable, Sendable {
     /// is what used to be "none".
     var backgroundEnabled: Bool = true
     var backgroundColor: RGBAColor = .black
-    var backgroundOpacity: Double = 0.55
-    var padding: Double = 28
+    /// Opaque black under white text is the pairing that reads on any footage,
+    /// so it is what a new install opens on; the slider is there to soften it.
+    var backgroundOpacity: Double = 1
+    var padding: Double = 20
 
     init() {}
 

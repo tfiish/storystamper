@@ -146,18 +146,19 @@ enum Motion {
 // MARK: - Instagram
 
 /// Numbers that describe Instagram rather than this app: where its interface
-/// covers a Story, and what padding it puts around Story text. They live here
-/// for the same reason everything else does—so no view carries a raw value—
-/// and they are the only entries here that would change because somebody else
-/// redesigned something.
+/// covers a Story. They live here for the same reason everything else does—so
+/// no view carries a raw value—and they are the only entries here that would
+/// change because somebody else redesigned something.
+///
+/// A `textPadding` used to sit alongside these, offered in the sidebar as
+/// Instagram's own text padding. Nothing measured it; 20 is a good starting
+/// number, which is all it ever was, so it is now the padding a new install
+/// opens on and claims nothing about anyone else's app.
 enum Instagram {
     /// Fraction of the frame's height that Instagram's own UI covers. Drawn
     /// as guides only, never part of an export.
     static let topSafeFraction: CGFloat = 0.13
     static let bottomSafeFraction: CGFloat = 0.16
-    /// Roughly the padding Instagram puts around Story text, in the same
-    /// 1080-wide reference units the padding slider uses.
-    static let textPadding: Double = 20
 }
 
 // MARK: - Icons
@@ -205,8 +206,8 @@ enum Metrics {
     /// the preview, which is the thing being judged.
     static let sourceSidebarWidth: CGFloat = 200
     /// The style sidebar is user-resizable within these bounds. Below the
-    /// lower bound the slider-plus-readout rows and the padding hint start
-    /// wrapping; above the upper bound it is just taking space from the video.
+    /// lower bound the slider-plus-readout rows start wrapping; above the
+    /// upper bound it is just taking space from the video.
     static let styleSidebarWidth: CGFloat = 300
     static let minStyleSidebarWidth: CGFloat = 260
     static let maxStyleSidebarWidth: CGFloat = 380
