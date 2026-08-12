@@ -22,7 +22,13 @@ Or open the folder in Xcode (`open Package.swift`) and run the StoryStamper sche
 ./Scripts/make-app.sh
 ```
 
-If you place a standalone `ffmpeg` binary at `Support/ffmpeg` before running the script, it is bundled into the app so end users need no Homebrew installation.
+Add `--install` to also copy it to `/Applications`, where it shows up in Finder, Spotlight, and Launchpad like any other app:
+
+```bash
+./Scripts/make-app.sh --install
+```
+
+The app icon is generated from [Scripts/make-icon.swift](Scripts/make-icon.swift) during the build, so there is no binary asset to maintain. If you place a standalone `ffmpeg` binary at `Support/ffmpeg` before running the script, it is bundled into the app so end users need no Homebrew installation.
 
 ## Using it
 

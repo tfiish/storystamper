@@ -9,6 +9,8 @@ Purpose of this document: everything needed to build, test, and modify the app. 
 | Debug build | `swift build` |
 | Run the app | `swift run` |
 | Release `.app` bundle | `./Scripts/make-app.sh` → `build/StoryStamper.app` |
+| Build and install to /Applications | `./Scripts/make-app.sh --install` |
+| Regenerate the icon alone | `swift Scripts/make-icon.swift out.iconset` |
 | Headless export test | `.build/debug/StoryStamper --smoke-export in.mp4 out.mp4 ["text"]` |
 
 There is no separate test target; the smoke test exercises the full probe → render → export pipeline (the same code paths the UI calls) without launching a window. If no text argument is given, it uses a string full of hostile characters—apostrophes, quotes, a percent sign, an em-dash, accents, and an emoji.

@@ -2,6 +2,11 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.1.1 — 2026-08-11
+
+- Added a generated app icon, drawn by `Scripts/make-icon.swift` at build time.
+- `Scripts/make-app.sh --install` now copies the app to `/Applications` and registers it with Launch Services.
+
 ## 1.1.0 — 2026-08-11
 
 - Support up to two text blocks, each with its own text, style, and position. The controls panel edits the selected block, a dashed ring marks the selection in the preview, and both blocks are burned into the export.
