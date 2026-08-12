@@ -15,8 +15,8 @@ struct SettingsView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: Spacing.small) {
-                Toggle("Confirm before clearing text", isOn: $project.confirmDestructiveActions)
-                Text("Asks first when the X on the video or the Remove button would throw away text you have typed. Turning this off is what the \u{201C}Don't ask me again\u{201D} checkbox does.")
+                Toggle("Confirm before deletion", isOn: $project.confirmDestructiveActions)
+                Text("Enables confirmation pop-up before clearing a video or text. Clicking \u{201C}Don't ask me again\u{201D} on that popup disables this.")
                     .font(.appSmall)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

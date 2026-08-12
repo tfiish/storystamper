@@ -12,6 +12,7 @@ Purpose of this document: a human-readable record of user-visible changes per ve
 - The export sheet's once-a-second clock runs only while an export is running, instead of ticking through the finished and failed states as well.
 - The window's minimum height is now composed from the story text field's minimum plus the chrome around it, so raising one raises the other rather than quietly introducing a scroll.
 - Documented, in code, which block's styling is the one that persists between launches: the last one you edited.
+- Reworded the Settings checkbox to Confirm before deletion, and the preview toggle to Area Guides.
 
 ## 1.6.0 — 2026-08-12
 
