@@ -2,6 +2,14 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.4.0 — 2026-08-12
+
+- Up to three text blocks instead of two.
+- Text Background is now a checkbox beside the section title, with the None/Solid/Translucent modes gone: unchecking dims the controls, and dragging Opacity to 100% gives a solid box.
+- Added one-click color swatches beside both color pickers—black, blue, gray, and white for the background, white and black for the text.
+- Added an About box in the bottom-left corner explaining what the app is for, with a link to the repository.
+- Centered the version label.
+
 ## 1.3.0 — 2026-08-11
 
 - Split the controls into two sidebars so nothing needs vertical scrolling. The left holds the video, story text, and preview guides; the right holds text style, text background, position, and export.

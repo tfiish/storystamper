@@ -1,14 +1,22 @@
 # Story Stamper
 
-A single-purpose macOS utility: drop in a vertical video, type up to two short blocks of Instagram Story-style text, position them by dragging, and export a new MP4 with the text permanently burned into the pixels.
+A single-purpose macOS utility: drop in a vertical video, type up to three short blocks of Instagram Story-style text, position them by dragging, and export a new MP4 with the text permanently burned into the pixels.
 
-There is no installer to download. You build it yourself from this source in about a minute, and it becomes a normal app in your Applications folder.
+## What it's for
+
+Story Stamper exists for one workflow: stamping a video with text *before* you schedule it from Meta Business Suite. Scheduling tools let you upload a video, but not add Story-style text to it, so the usual workaround is to move the clip onto a phone, add text in the Instagram app, save it back, and pull it off again. This skips all of that. It adds text, and only text—no trimming, no filters, no stickers.
+
+## How you're meant to use it
+
+This is not a downloadable installer, and it is not a command-line tool. You clone this repository and run one command, which compiles a real, self-contained `StoryStamper.app` into your Applications folder. From that point on you use it like any other Mac app: open it from Spotlight, the Dock, or Finder, and drag videos onto it. **You never need to touch the terminal again.**
+
+You would only return to the terminal to update the app after changing the code, or to reinstall it on a new Mac.
 
 ## Privacy
 
 Story Stamper collects nothing, sends nothing, and needs no account. This is verifiable in the source, not just a promise:
 
-- **No networking of any kind.** The app contains no HTTP client, no sockets, and no URLs. It imports only Apple's own frameworks—AppKit, SwiftUI, AVFoundation, Core Graphics, and Foundation—and has zero third-party dependencies ([Package.swift](Package.swift) declares none).
+- **No networking of any kind.** The app contains no HTTP client and no sockets, and never makes a request. The only URL anywhere in it is the link to this repository in the About box, which opens in your browser if you click it. It imports only Apple's own frameworks—AppKit, SwiftUI, AVFoundation, Core Graphics, and Foundation—and has zero third-party dependencies ([Package.swift](Package.swift) declares none).
 - **No analytics, telemetry, crash reporting, or update checks.**
 - **Your video never leaves your Mac.** It is read from the location you choose, and the finished file is written where you tell it to go. Nothing else touches it.
 - **The only things written outside your export** are your style preferences in `UserDefaults` (font, size, colors, background, padding, and alignment) and a single temporary PNG of the text overlay, which is deleted as soon as the export finishes.
@@ -53,7 +61,7 @@ The app icon is generated from [Scripts/make-icon.swift](Scripts/make-icon.swift
 ## Using it
 
 1. Drag an MP4, MOV, or M4V into the window, or click Choose Video.
-2. Type into Story Text—the overlay updates live, preserving your line breaks and wrapping long lines automatically. Click Add Second Block for a second, independently styled overlay; the controls always edit the selected block, and a dashed ring marks the selection when two blocks exist.
+2. Type into Story Text—the overlay updates live, preserving your line breaks and wrapping long lines automatically. Click Add Text Block for up to three independently styled overlays; the controls always edit the selected block, and a dashed ring marks the selection once more than one exists.
 3. Adjust font, size, alignment, color, background, and padding in the right-hand panel.
 4. Drag either text block anywhere on the preview, or use the Top, Center, and Bottom quick-position buttons. Dragging near the horizontal or vertical midline snaps to it, and a guide line appears to show the snap.
 5. Click the X in the top-right corner of the video to unload it and start over. The story text clears, while your styling carries over to the next clip.
@@ -81,7 +89,7 @@ Rotation is handled carefully: FFmpeg auto-rotates phone footage upright before 
 
 ## Known limitations
 
-- At most two text blocks, each shown for the entire video—no animation, trimming, filters, or stickers, by design.
+- At most three text blocks, each shown for the entire video—no animation, trimming, filters, or stickers, by design.
 - Export requires an FFmpeg installation unless one is bundled into the app.
 - The safe-area guides are reasonable approximations of Instagram's UI, not exact measurements.
 - Output is 8-bit SDR H.264, so HDR sources lose their HDR grade.

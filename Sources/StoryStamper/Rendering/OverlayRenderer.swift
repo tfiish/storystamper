@@ -59,7 +59,7 @@ enum OverlayRenderer {
         NSGraphicsContext.current = NSGraphicsContext(cgContext: context, flipped: true)
         defer { NSGraphicsContext.current = previous }
 
-        if style.backgroundMode != .none {
+        if style.backgroundEnabled {
             let alpha = style.effectiveBackgroundAlpha
             let radius = cornerRadius(for: style, blockSize: blockSize)
             let path = NSBezierPath(
@@ -93,7 +93,7 @@ enum OverlayRenderer {
 
         // Without a background box, a soft shadow keeps text legible on
         // bright footage—mirroring how Instagram treats bare Story text.
-        if style.backgroundMode == .none {
+        if !style.backgroundEnabled {
             let shadow = NSShadow()
             shadow.shadowColor = NSColor.black.withAlphaComponent(0.45)
             shadow.shadowBlurRadius = style.fontSize * 0.1
@@ -173,7 +173,7 @@ enum OverlayRenderer {
     }
 
     private static func contentInset(for style: OverlayStyle) -> CGFloat {
-        style.backgroundMode == .none ? bleed : style.padding + bleed
+        style.backgroundEnabled ? style.padding + bleed : bleed
     }
 
     private static func cornerRadius(for style: OverlayStyle, blockSize: CGSize) -> CGFloat {

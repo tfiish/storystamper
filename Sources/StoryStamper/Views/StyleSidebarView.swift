@@ -43,38 +43,30 @@ struct StyleSidebarView: View {
             }
             .pickerStyle(.segmented)
 
-            ColorPicker(
-                "Text Color",
-                selection: colorBinding(\.textColor),
-                supportsOpacity: false
-            )
+            LabeledContent("Color") {
+                ColorRow(presets: ColorPreset.text, selection: styleBinding(\.textColor))
+            }
         }
     }
 
     private var backgroundSection: some View {
-        Section("Text Background") {
-            Picker("Style", selection: $project.selectedBlock.style.backgroundMode) {
-                ForEach(BackgroundMode.allCases) { mode in
-                    Text(mode.displayName).tag(mode)
+        let enabled = project.selectedBlock.style.backgroundEnabled
+        return Section {
+            // Grouped so unchecking dims only the controls, never the header
+            // checkbox that turns them back on. Rows stay visible at a fixed
+            // height rather than collapsing.
+            Group {
+                LabeledContent("Color") {
+                    ColorRow(presets: ColorPreset.background, selection: styleBinding(\.backgroundColor))
                 }
-            }
-            .pickerStyle(.segmented)
 
-            if project.selectedBlock.style.backgroundMode != .none {
-                ColorPicker(
-                    "Color",
-                    selection: colorBinding(\.backgroundColor),
-                    supportsOpacity: false
-                )
-
-                if project.selectedBlock.style.backgroundMode == .semiTransparent {
-                    LabeledContent("Opacity") {
-                        HStack(spacing: 8) {
-                            Slider(value: $project.selectedBlock.style.backgroundOpacity, in: 0.1...0.9)
-                            Text("\(Int(project.selectedBlock.style.backgroundOpacity * 100))%")
-                                .font(.caption.monospacedDigit())
-                                .frame(width: 32, alignment: .trailing)
-                        }
+                LabeledContent("Opacity") {
+                    HStack(spacing: 8) {
+                        // 100% produces what used to be the "Solid" mode.
+                        Slider(value: $project.selectedBlock.style.backgroundOpacity, in: 0.1...1)
+                        Text("\(Int(project.selectedBlock.style.backgroundOpacity * 100))%")
+                            .font(.caption.monospacedDigit())
+                            .frame(width: 32, alignment: .trailing)
                     }
                 }
 
@@ -87,6 +79,10 @@ struct StyleSidebarView: View {
                     }
                 }
             }
+            .disabled(!enabled)
+        } header: {
+            Toggle("Text Background", isOn: $project.selectedBlock.style.backgroundEnabled)
+                .toggleStyle(.checkbox)
         }
     }
 
@@ -134,12 +130,50 @@ struct StyleSidebarView: View {
             .foregroundStyle(.secondary)
     }
 
-    /// Bridges an RGBAColor property of the selected block's style to the
-    /// Color value ColorPicker expects.
-    private func colorBinding(_ keyPath: WritableKeyPath<OverlayStyle, RGBAColor>) -> Binding<Color> {
+    private func styleBinding(_ keyPath: WritableKeyPath<OverlayStyle, RGBAColor>) -> Binding<RGBAColor> {
         Binding(
-            get: { project.selectedBlock.style[keyPath: keyPath].color },
-            set: { project.selectedBlock.style[keyPath: keyPath] = RGBAColor(color: $0) }
+            get: { project.selectedBlock.style[keyPath: keyPath] },
+            set: { project.selectedBlock.style[keyPath: keyPath] = $0 }
         )
+    }
+}
+
+/// One-click preset swatches followed by the system color picker for anything
+/// else. The active preset gets a ring.
+private struct ColorRow: View {
+    let presets: [(name: String, color: RGBAColor)]
+    @Binding var selection: RGBAColor
+
+    var body: some View {
+        HStack(spacing: 7) {
+            ForEach(presets, id: \.name) { preset in
+                Button {
+                    selection = preset.color
+                } label: {
+                    Circle()
+                        .fill(preset.color.color)
+                        .frame(width: 17, height: 17)
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.3), lineWidth: 0.5))
+                        .overlay {
+                            Circle()
+                                .strokeBorder(Color.accentColor, lineWidth: 2)
+                                .padding(-3)
+                                .opacity(selection.matches(preset.color) ? 1 : 0)
+                        }
+                }
+                .buttonStyle(.plain)
+                .help(preset.name)
+            }
+
+            ColorPicker(
+                "",
+                selection: Binding(
+                    get: { selection.color },
+                    set: { selection = RGBAColor(color: $0) }
+                ),
+                supportsOpacity: false
+            )
+            .labelsHidden()
+        }
     }
 }

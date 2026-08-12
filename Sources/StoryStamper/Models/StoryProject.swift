@@ -32,7 +32,7 @@ struct OverlayBlock: Identifiable, Equatable {
 @MainActor
 @Observable
 final class StoryProject {
-    static let maxBlocks = 2
+    static let maxBlocks = 3
 
     // MARK: - Video
 
@@ -110,11 +110,16 @@ final class StoryProject {
         blocks.count < Self.maxBlocks
     }
 
-    /// Adds a second block, inheriting the current block's style and landing
-    /// in the emptier half of the frame.
+    /// Adds a block inheriting the current block's style, dropped into
+    /// whichever third of the frame sits farthest from the existing blocks.
     func addBlock() {
         guard canAddBlock else { return }
-        let vertical = selectedBlock.center.y <= 0.5 ? 0.75 : 0.25
+        let slots: [Double] = [0.2, 0.5, 0.8]
+        let taken = blocks.map(\.center.y)
+        let distance: (Double) -> Double = { slot in
+            taken.map { abs($0 - slot) }.min() ?? 1
+        }
+        let vertical = slots.max { distance($0) < distance($1) } ?? 0.5
         blocks.append(OverlayBlock(style: selectedBlock.style, center: CGPoint(x: 0.5, y: vertical)))
         selectedIndex = blocks.count - 1
     }

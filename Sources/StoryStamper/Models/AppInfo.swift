@@ -5,7 +5,8 @@ enum AppInfo {
     /// installed app; `swift run` produces a bare executable with no
     /// Info.plist, so keep `developmentVersion` in step with Support/Info.plist.
     static let displayName = "Story Stamper"
-    static let developmentVersion = "1.3.0"
+    static let developmentVersion = "1.4.0"
+    static let repositoryURL = URL(string: "https://github.com/tfiish/storystamper")
 
     static var version: String {
         let bundled = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String

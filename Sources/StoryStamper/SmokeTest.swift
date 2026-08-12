@@ -32,7 +32,7 @@ enum SmokeTest {
                 // compositing on every smoke run.
                 var secondStyle = OverlayStyle()
                 secondStyle.fontSize = 44
-                secondStyle.backgroundMode = .none
+                secondStyle.backgroundEnabled = false
                 var overlays = [PlacedOverlay(overlay: mainBlock, center: CGPoint(x: 0.5, y: 0.72))]
                 if let second = OverlayRenderer.renderBlock(text: "Second block ✓", style: secondStyle, videoSize: info.displaySize) {
                     overlays.append(PlacedOverlay(overlay: second, center: CGPoint(x: 0.5, y: 0.18)))

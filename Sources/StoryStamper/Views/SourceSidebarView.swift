@@ -4,6 +4,7 @@ import SwiftUI
 /// guides. Styling lives opposite in `StyleSidebarView`.
 struct SourceSidebarView: View {
     @Bindable var project: StoryProject
+    @State private var showingAbout = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -14,20 +15,25 @@ struct SourceSidebarView: View {
             }
             .formStyle(.grouped)
 
-            versionFooter
+            footer
         }
         .frame(width: 300)
+        .sheet(isPresented: $showingAbout) {
+            AboutView()
+        }
     }
 
-    private var versionFooter: some View {
-        HStack {
+    private var footer: some View {
+        VStack(spacing: 4) {
+            Button("About") { showingAbout = true }
+                .controlSize(.small)
             Text("\(AppInfo.displayName) v\(AppInfo.version)")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
-            Spacer()
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 6)
+        .padding(.bottom, 10)
     }
 
     private var videoSection: some View {
@@ -77,13 +83,16 @@ struct SourceSidebarView: View {
                 .frame(minHeight: 110)
                 .scrollContentBackground(.hidden)
 
-            if project.canAddBlock {
-                Button("Add Second Block") {
-                    project.addBlock()
+            HStack {
+                if project.canAddBlock {
+                    Button("Add Text Block") {
+                        project.addBlock()
+                    }
                 }
-            } else {
-                Button("Remove This Block", role: .destructive) {
-                    project.removeSelectedBlock()
+                if project.blocks.count > 1 {
+                    Button("Remove", role: .destructive) {
+                        project.removeSelectedBlock()
+                    }
                 }
             }
         }
