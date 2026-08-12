@@ -2,6 +2,13 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.9.1 — 2026-08-12
+
+- **The style sidebar scrolls while it is greyed out.** With no video loaded the whole panel was disabled, and disabling a form disables its scroll view along with its controls—so at a short window you could see there was more below and had no way to reach it. The controls are now greyed section by section, and the panel scrolls either way.
+- **No ellipses on commands.** 1.9.0 added them to everything that opens a panel, which is the platform convention and, in an app with a dozen commands of which five take one, read as noise. Open Video, Replace Video, Export Video, Settings, and About are plain again. This is now a deliberate house rule rather than an oversight.
+- **Add Block and Remove Block**, in the sidebar, the Text menu, and the undo stack alike. The section is already called Story Text and the menu is already called Text; the noun was carrying the word twice.
+- Three lines of helper text are gone. Blocks snapping to the midlines is what dragging one shows you in the first second, styling applying to the selected block is what selecting one means, and the padding hint now reads "Instagram native padding: 20" rather than hedging about it. All three cost vertical space in a sidebar that has none to spare.
+
 ## 1.9.0 — 2026-08-12
 
 The first pass of a full consistency audit ([AUDIT.md](AUDIT.md)). Mostly words, and the places where one action had picked up three names.

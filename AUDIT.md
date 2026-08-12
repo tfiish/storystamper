@@ -20,7 +20,15 @@ Everything below was fixed and shipped in 1.9.0. **Line numbers in the findings 
 
 **Reclassified after a closer look, no change made:** L8 (icon weight). The four icons serve three roles — hero, status, empty state — and the two that share a role already match. Forcing the other two to agree would be uniformity for its own sake.
 
-**Still open:** H2 is done, H4 is a documented decision, and what remains is listed in §19 plus the two judgment calls in the closing note. Nothing else in this file is outstanding.
+**Still open:** H2 is done, H4 is a documented decision, and what remains is listed in §19 plus the two judgment calls in the closing note.
+
+### Reversed after review, 1.9.1
+
+**H3 (ellipses) is withdrawn.** Ellipses were added on every command that opens a panel, and removed again: five of this app's dozen commands take one, and the result read as noise. **This is now a deliberate house convention, recorded in DEVELOPING.md — do not re-raise it.** The one remaining ellipsis, `"Finishing up…"` in the export sheet, is a progress string rather than a command label and stays.
+
+**H6/M3 landed shorter than recommended.** The audit proposed standardizing on *Add Text Block* / *Remove Text Block*; the shipped names are **Add Block** / **Remove Block**, applied across the sidebar, the menu, the undo stack, and the VoiceOver labels. The section is already called Story Text and the menu is already called Text, so the noun was carrying "text" twice. The one-name-per-action rule holds; the name is just shorter.
+
+**Three helper lines deleted rather than reworded.** "Blocks snap to the midlines", the whole "Style changes apply only to the selected text block" line, and the hedge in the padding hint (now "Instagram native padding:"). Self-evident copy costs vertical space in a 260 pt sidebar and is read once. Noted in DEVELOPING.md as a standing rule.
 
 ---
 

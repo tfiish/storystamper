@@ -7,19 +7,26 @@ struct StyleSidebarView: View {
     @FocusState private var textEditorFocused: Bool
     @FocusState private var paddingHintFocused: Bool
 
+    private var noVideo: Bool { project.video == nil }
+
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                textSection
-                styleSection
-                backgroundSection
+                // Nothing in here means anything without a video: a block is
+                // placed against the video's frame, and no overlay renders
+                // until one is loaded. Better to grey the lot than to let
+                // someone style an overlay that does not exist.
+                //
+                // Disabled per section rather than on the Form, because
+                // disabling the Form disables its scroll view too—so at a
+                // short window the greyed-out panel could not be scrolled to
+                // see the rest of itself, which reads as broken rather than
+                // as unavailable.
+                textSection.disabled(noVideo)
+                styleSection.disabled(noVideo)
+                backgroundSection.disabled(noVideo)
             }
             .formStyle(.grouped)
-            // Nothing in here means anything without a video: a block is
-            // placed against the video's frame, and no overlay renders until
-            // one is loaded. Better to grey the lot than to let someone style
-            // an overlay that does not exist.
-            .disabled(project.video == nil)
 
             exportFooter
         }
@@ -53,18 +60,18 @@ struct StyleSidebarView: View {
                 .accessibilityLabel("Story text")
 
             HStack {
-                Button("Add Text Block") {
+                Button("Add Block") {
                     project.addBlock()
                 }
                 .disabled(!project.canAddBlock)
 
-                Button("Remove Text Block", role: .destructive) {
+                Button("Remove Block", role: .destructive) {
                     project.requestRemoveSelectedBlock()
                 }
                 .disabled(project.blocks.count < 2)
             }
 
-            Text("Drag or use arrow keys to reposition. Blocks snap to the midlines.")
+            Text("Drag or use arrow keys to reposition.")
                 .font(.appSmall)
                 .foregroundStyle(.secondary)
         }
@@ -105,10 +112,6 @@ struct StyleSidebarView: View {
             LabeledContent("Color") {
                 ColorRow(presets: ColorPreset.text, selection: styleBinding(\.textColor))
             }
-
-            Text("Style changes apply only to the selected text block.")
-                .font(.appSmall)
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -160,7 +163,7 @@ struct StyleSidebarView: View {
 
     private var paddingHint: some View {
         HStack(spacing: 0) {
-            Text("Instagram's native padding is approximately ")
+            Text("Instagram native padding: ")
             Button {
                 project.selectedBlock.style.padding = Instagram.textPadding
             } label: {

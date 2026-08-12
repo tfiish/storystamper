@@ -16,16 +16,19 @@ struct StoryCommands: Commands {
         }
 
         CommandGroup(replacing: .appSettings) {
-            Button("Settings…") { project.infoSheet = .settings }
+            Button("Settings") { project.infoSheet = .settings }
                 .keyboardShortcut(",", modifiers: .command)
         }
 
-        // A one-window utility has no New, so Open takes its place. The
-        // trailing ellipsis is not decoration: every command here opens a
-        // panel before it does anything, and that is what the character
-        // promises on this platform.
+        // A one-window utility has no New, so Open takes its place.
+        //
+        // No trailing ellipsis, here or anywhere else. The platform
+        // convention would put one on every command that opens a panel, and
+        // this app deliberately does not: there are five of them, they are
+        // the most-used commands in a utility with barely a dozen, and a
+        // screen of trailing dots reads as noise rather than as a promise.
         CommandGroup(replacing: .newItem) {
-            Button(project.video == nil ? "Open Video…" : "Replace Video…") {
+            Button(project.video == nil ? "Open Video" : "Replace Video") {
                 project.chooseVideo()
             }
             .keyboardShortcut("o", modifiers: .command)
@@ -33,20 +36,20 @@ struct StoryCommands: Commands {
 
         CommandGroup(after: .newItem) {
             Divider()
-            Button("Export Video…") { project.beginExport() }
+            Button("Export Video") { project.beginExport() }
                 .keyboardShortcut("e", modifiers: .command)
                 .disabled(!project.canExport)
         }
 
         CommandMenu("Text") {
-            Button("Add Text Block") { project.addBlock() }
+            Button("Add Block") { project.addBlock() }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
                 .disabled(!project.canAddBlock)
 
             // Not Command-Delete: that is delete-to-beginning-of-line in any
             // text view, and a menu key equivalent beats the responder chain,
             // so it would eat the shortcut while you were typing a caption.
-            Button("Remove Text Block") { project.requestRemoveSelectedBlock() }
+            Button("Remove Block") { project.requestRemoveSelectedBlock() }
                 .keyboardShortcut(.delete, modifiers: [.command, .shift])
                 .disabled(project.blocks.count < 2)
 

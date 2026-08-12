@@ -195,15 +195,18 @@ One action, one name, wherever it is reached from—the control, the menu item, 
 
 | Action | Name |
 | --- | --- |
-| Load a video | **Open Video…** when none is loaded, **Replace Video…** when one is |
+| Load a video | **Open Video** when none is loaded, **Replace Video** when one is |
 | Discard the video | **Unload Video** |
-| Add a block | **Add Text Block** |
-| Remove a block | **Remove Text Block** |
-| Export | **Export Video…** |
+| Add a block | **Add Block** |
+| Remove a block | **Remove Block** |
+| Select one | **Select Block 1** |
+| Export | **Export Video** |
 
-A trailing ellipsis means the command opens a panel before it does anything. Every command above that takes one has it.
+**No trailing ellipses.** The platform convention would put one on every command that opens a panel, and five of this app's dozen commands do. A screen of trailing dots reads as noise rather than as a promise, so the convention is declined deliberately—not overlooked. An audit that rediscovers this should leave it alone.
 
-The object is a **text block**: Title Case in a control label or menu item, lowercase in a sentence. Instagram's **Story** is capitalized, always.
+The object is a **block**: Title Case in a control label or menu item, lowercase in a sentence. Not "text block"—the section is already called Story Text and the menu is already called Text, so the noun was carrying the word twice. Instagram's **Story** is capitalized, always.
+
+Helper text earns its place or goes. A line that tells someone what they would find out by looking—that blocks snap to the midlines, that styling the selected block styles the selected block—is a line they read once and skip forever, and it pushes the controls down for everyone.
 
 ## Style rules for this repo
 

@@ -230,7 +230,7 @@ final class StoryProject {
                 actionName = "Text Style"
             } else if old.center != new.center {
                 group = .placement(new.id)
-                actionName = "Move Text Block"
+                actionName = "Move Block"
             } else {
                 closeUndoGroup()
                 return
@@ -291,7 +291,7 @@ final class StoryProject {
     /// whichever third of the frame sits farthest from the existing blocks.
     func addBlock() {
         guard canAddBlock else { return }
-        registerUndo("Add Text Block")
+        registerUndo("Add Block")
         let slots: [Double] = [0.2, 0.5, 0.8]
         let taken = blocks.map(\.center.y)
         let distance: (Double) -> Double = { slot in
@@ -304,7 +304,7 @@ final class StoryProject {
 
     private func removeSelectedBlock() {
         guard blocks.count > 1 else { return }
-        registerUndo("Remove Text Block")
+        registerUndo("Remove Block")
         blocks.remove(at: safeSelectedIndex)
         selectedIndex = 0
     }

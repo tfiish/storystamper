@@ -29,9 +29,9 @@ struct SourceSidebarView: View {
         BarStrip {
             VStack(spacing: Spacing.small) {
                 HStack(spacing: Spacing.small) {
-                    Button("Settings…") { project.infoSheet = .settings }
+                    Button("Settings") { project.infoSheet = .settings }
                         .controlSize(.small)
-                    Button("About…") { project.infoSheet = .about }
+                    Button("About") { project.infoSheet = .about }
                         .controlSize(.small)
                 }
                 Text("\(AppInfo.displayName) v\(AppInfo.version)")
@@ -64,13 +64,13 @@ struct SourceSidebarView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                Button("Replace Video…") {
+                Button("Replace Video") {
                     project.chooseVideo()
                 }
             } else {
                 // No button here: the drop prompt filling the pane alongside
                 // this already carries the call to action, and two differently
-                // styled Choose Video buttons on screen at once read as two
+                // styled Open Video buttons on screen at once read as two
                 // different things.
                 Text("No video loaded")
                     .foregroundStyle(.secondary)

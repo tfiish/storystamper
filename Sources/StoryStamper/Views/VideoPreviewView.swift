@@ -40,7 +40,7 @@ struct VideoPreviewView: View {
                 nudge(press)
             }
             .accessibilityLabel("Video preview")
-            .accessibilityHint("Arrow keys move the selected text block. Hold Shift to move farther.")
+            .accessibilityHint("Arrow keys move the selected block. Hold Shift to move farther.")
 
             if project.video != nil {
                 TransportBar(project: project)
@@ -78,7 +78,7 @@ struct VideoPreviewView: View {
             Text("MP4, MOV, or M4V")
                 .font(.appRegular)
                 .foregroundStyle(.secondary)
-            Button("Open Video…") {
+            Button("Open Video") {
                 project.chooseVideo()
             }
         }
@@ -222,7 +222,7 @@ struct VideoPreviewView: View {
                     }
             )
             .accessibilityElement()
-            .accessibilityLabel("Text block \(blockIndex + 1)")
+            .accessibilityLabel("Block \(blockIndex + 1)")
             .accessibilityValue(project.blocks[blockIndex].text)
             .accessibilityAddTraits(isTarget ? [.isSelected] : [])
     }
