@@ -2,6 +2,11 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 2.1.2 — 2026-08-12
+
+- **Delete removes the selected block** when the preview has focus—which is to say, right after you have clicked or dragged a block. **When it is the only block left, Delete clears its text instead**, since removing the last block would leave nothing to select. Both are one Command-Z away.
+- **Clear Text is in the Text menu**, next to Remove Block, so the second half of that key is discoverable rather than folklore. It has no shortcut of its own: a menu key equivalent outranks the responder chain, so a bare Delete in the menu would delete a block while you were typing a caption. That is also why it is the preview, and not the menu, that listens for the key.
+
 ## 2.1.1 — 2026-08-12
 
 - **Double-click a text block on the preview to edit its text.** It selects that block and puts the caret in the Story Text field, so the block you just pointed at is the one you start typing into. A single click still just selects. VoiceOver reaches the same thing as an Edit Text action on the block.

@@ -53,6 +53,11 @@ struct StoryCommands: Commands {
                 .keyboardShortcut(.delete, modifiers: [.command, .shift])
                 .disabled(project.blocks.count < 2)
 
+            // No shortcut, for the same reason: bare Delete does this on the
+            // preview, where it can be had only while the preview has focus.
+            Button("Clear Text") { project.clearSelectedText() }
+                .disabled(!project.canClearText)
+
             Divider()
 
             ForEach(Array(project.blocks.enumerated()), id: \.element.id) { index, _ in

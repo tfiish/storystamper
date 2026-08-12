@@ -226,6 +226,7 @@ One action, one name, wherever it is reached from—the control, the menu item, 
 | Discard the video | **Clear Video** |
 | Add a block | **Add Block** |
 | Remove a block | **Remove Block** |
+| Empty a block, keeping it | **Clear Text** |
 | Select one | **Select Block 1** |
 | Export | **Export Video** |
 

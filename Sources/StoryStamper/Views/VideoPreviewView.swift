@@ -39,8 +39,15 @@ struct VideoPreviewView: View {
             .onKeyPress(keys: [.upArrow, .downArrow, .leftArrow, .rightArrow], phases: [.down, .repeat]) { press in
                 nudge(press)
             }
+            // Bare Delete, which no menu item can carry: a key equivalent
+            // beats the responder chain, so it would delete a block instead
+            // of a character while the story text had focus. Here it is
+            // reached only while the preview itself holds focus.
+            .onKeyPress(keys: [.delete, .deleteForward], phases: [.down]) { _ in
+                deleteSelection()
+            }
             .accessibilityLabel("Video preview")
-            .accessibilityHint("Arrow keys move the selected block. Hold Shift to move farther.")
+            .accessibilityHint("Arrow keys move the selected block. Hold Shift to move farther. Delete removes it, or clears its text if it is the only block.")
 
             if project.video != nil {
                 TransportBar(project: project)
@@ -63,6 +70,14 @@ struct VideoPreviewView: View {
         default: return .ignored
         }
         return .handled
+    }
+
+    /// Delete removes the selected block, or empties the last one. Ignored
+    /// rather than swallowed when there is nothing to delete, so the key is
+    /// still the system's to beep about.
+    private func deleteSelection() -> KeyPress.Result {
+        guard project.video != nil else { return .ignored }
+        return project.deleteSelectedBlock() ? .handled : .ignored
     }
 
     // MARK: - Empty state

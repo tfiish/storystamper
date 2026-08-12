@@ -323,6 +323,38 @@ final class StoryProject {
         selectedIndex = 0
     }
 
+    /// Whether Clear Text has anything to clear. Whitespace counts as nothing
+    /// to see, the same judgment `hasText` makes for rendering.
+    var canClearText: Bool {
+        selectedBlock.hasText
+    }
+
+    /// Empties the selected block, keeping the block and its styling. Named
+    /// and registered rather than left to the text editor's own undo, because
+    /// this arrives from outside the field—the editor never sees the edit and
+    /// so cannot put it back.
+    func clearSelectedText() {
+        guard canClearText else { return }
+        registerUndo("Clear Text")
+        selectedBlock.text = ""
+    }
+
+    /// The Delete key over the preview. With more than one block it removes
+    /// the selected one; at the last block there is nothing to remove, so it
+    /// empties that block instead of leaving the app with nothing to select.
+    /// Returns whether it did anything, so the key can fall through untouched
+    /// when it would not.
+    @discardableResult
+    func deleteSelectedBlock() -> Bool {
+        if blocks.count > 1 {
+            removeSelectedBlock()
+            return true
+        }
+        guard canClearText else { return false }
+        clearSelectedText()
+        return true
+    }
+
     /// Moves the selected block by a step in normalized coordinates, clamped
     /// the same way a drag is, so the keyboard and the mouse cannot put a
     /// block anywhere the other could not.
