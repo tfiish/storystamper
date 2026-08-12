@@ -2,6 +2,12 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 2.1.3 — 2026-08-12
+
+- **Delete over the preview removes the selected block, which is what 2.1.2 said it would do and did not.** The key was matched against SwiftUI's `KeyEquivalent.delete`, which is backspace—the character a menu shortcut carries, not the one an actual key press reports. Nothing matched, so nothing happened, and only Forward Delete (fn-Delete) ever worked. Everything the 2.1.2 note says about the key is true now.
+- **Clicking the video away from every block deselects it.** The ring comes off, and the arrow keys and Delete have nothing to act on until you pick a block again—by clicking one, by its tab under Story Text, or from the Text menu. The style panel goes on editing whichever block it was already editing: the sidebar always has a block to act on, and this is the preview's own idea of what is selected.
+- **The README has pictures of the app in it**, which it never did before.
+
 ## 2.1.2 — 2026-08-12
 
 - **Delete removes the selected block** when the preview has focus—which is to say, right after you have clicked or dragged a block. **When it is the only block left, Delete clears its text instead**, since removing the last block would leave nothing to select. Both are one Command-Z away.

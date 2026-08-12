@@ -12,6 +12,12 @@ struct VideoPreviewView: View {
     /// Whether the preview holds keyboard focus, which is what makes the
     /// arrow keys nudge the selected block.
     @FocusState private var previewFocused: Bool
+    /// Whether a block is selected *on the preview*, as opposed to merely
+    /// being the one the sidebar edits. Clicking the video away from every
+    /// block drops it, which takes the ring away and leaves the arrow keys
+    /// and Delete with nothing to act on. The sidebar always has a target,
+    /// so this is the preview's own idea of selection and lives here.
+    @State private var blockSelected = true
 
     var body: some View {
         VStack(spacing: 0) {
@@ -43,9 +49,14 @@ struct VideoPreviewView: View {
             // beats the responder chain, so it would delete a block instead
             // of a character while the story text had focus. Here it is
             // reached only while the preview itself holds focus.
-            .onKeyPress(keys: [.delete, .deleteForward], phases: [.down]) { _ in
+            .onKeyPress(keys: [Self.deleteKey, .deleteForward], phases: [.down]) { _ in
                 deleteSelection()
             }
+            // Anything that moves the sidebar's target—Command-1, Add Block,
+            // Remove Block—is also a selection, so the ring comes back for it
+            // without each of those paths having to say so.
+            .onChange(of: project.selectedIndex) { blockSelected = true }
+            .onChange(of: project.blocks.count) { blockSelected = true }
             .accessibilityLabel("Video preview")
             .accessibilityHint("Arrow keys move the selected block. Hold Shift to move farther. Delete removes it, or clears its text if it is the only block.")
 
@@ -60,7 +71,7 @@ struct VideoPreviewView: View {
     /// Arrow keys are the non-mouse route to positioning, and the precise one:
     /// a fine step is about four pixels on a 1080-wide frame.
     private func nudge(_ press: KeyPress) -> KeyPress.Result {
-        guard project.video != nil else { return .ignored }
+        guard project.video != nil, blockSelected else { return .ignored }
         let step = press.modifiers.contains(.shift) ? Interaction.nudgeCoarse : Interaction.nudgeFine
         switch press.key {
         case .upArrow: project.nudgeSelectedBlock(dx: 0, dy: -step)
@@ -72,11 +83,17 @@ struct VideoPreviewView: View {
         return .handled
     }
 
+    /// The Delete key as a key *press* reports itself: DEL. Not
+    /// `KeyEquivalent.delete`, which is backspace—the character a menu
+    /// shortcut carries, and the one `keyboardShortcut` still wants. The two
+    /// never meet, so matching the constant here left the key doing nothing.
+    private static let deleteKey = KeyEquivalent("\u{7F}")
+
     /// Delete removes the selected block, or empties the last one. Ignored
     /// rather than swallowed when there is nothing to delete, so the key is
     /// still the system's to beep about.
     private func deleteSelection() -> KeyPress.Result {
-        guard project.video != nil else { return .ignored }
+        guard project.video != nil, blockSelected else { return .ignored }
         return project.deleteSelectedBlock() ? .handled : .ignored
     }
 
@@ -135,6 +152,15 @@ struct VideoPreviewView: View {
         // rather than the canvas inside it—so it reads as sitting outside the
         // content, not as a second frame around it.
         .padding(Spacing.medium)
+        // Clicking the video away from every block deselects. The shape is
+        // taken after the inset so the margin counts as away too, and the
+        // blocks are drawn over it, so their own taps land first and never
+        // reach this. Only present with a video, which keeps it clear of the
+        // drop prompt's button.
+        .contentShape(Rectangle())
+        .onTapGesture {
+            blockSelected = false
+        }
     }
 
     /// Aspect-fit rect for the video inside the available space; every overlay
@@ -162,9 +188,10 @@ struct VideoPreviewView: View {
         )
         // The ring marks what the controls—and the arrow keys—are about to
         // act on, so it matters once there is a second block, and whenever the
-        // preview has keyboard focus.
+        // preview has keyboard focus. Not while the preview is deselected,
+        // which is the one state where the answer is nothing.
         let isTarget = blockIndex == min(project.selectedIndex, project.blocks.count - 1)
-        let isSelected = isTarget && (project.blocks.count > 1 || previewFocused)
+        let isSelected = isTarget && blockSelected && (project.blocks.count > 1 || previewFocused)
 
         return Image(decorative: overlay.cgImage, scale: 1)
             .resizable()
@@ -238,9 +265,12 @@ struct VideoPreviewView: View {
     }
 
     /// Selecting a block also takes keyboard focus, so the arrow keys act on
-    /// whatever was just clicked without a separate focusing step.
+    /// whatever was just clicked without a separate focusing step. Set here
+    /// rather than left to `selectedIndex` changing, because clicking the
+    /// block that is already the target has to bring the ring back too.
     private func select(_ blockIndex: Int) {
         project.selectedIndex = blockIndex
+        blockSelected = true
         previewFocused = true
     }
 

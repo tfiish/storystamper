@@ -2,6 +2,8 @@
 
 A single-purpose macOS utility: drop in a vertical video, type up to three short blocks of Instagram Story-style text, position them by dragging, and export a new MP4 with the text permanently burned into the pixels.
 
+![The Story Stamper window in dark mode: a vertical video fills the center of the window with two text blocks placed over it, the video and preview controls sit in a panel on the left, and the story text and styling controls on the right.](docs/images/main-window.jpg)
+
 ## What it's for
 
 Story Stamper exists for one workflow: stamping a video with text before you schedule it to your Instagram story from Meta Business Suite. Scheduling tools let you upload a video, but not add Story-style text to it, so the usual workaround is to move the clip onto a phone, add text in the Instagram app, save it back, and pull it off again. This skips all of that. It adds text, and only text—no trimming, no filters, no stickers. It is extremely lightweight, and intentionally feature-poor, to allow you to quickly process a batch of videos in this one specific way.
@@ -42,6 +44,8 @@ cd storystamper && ./Scripts/make-app.sh --install
 
 That compiles a release build, assembles `StoryStamper.app`, generates its icon, signs it, and copies it to `/Applications`. When it finishes, Story Stamper is in Finder, Spotlight, and Launchpad like any other app—double-click it, or drag it to your Dock.
 
+![The Story Stamper icon in the macOS Dock, between two other app icons: a pink and purple rounded square holding two white bars, like lines of text.](docs/images/app-icon.png)
+
 Because you compiled it yourself, macOS raises no Gatekeeper warning. (A `.app` copied from someone else's Mac would, since these builds are ad-hoc signed rather than notarized; the recipient would need to right-click → Open once.) Rerun the same command any time you change the code, and no Apple Developer account is required at any point.
 
 (If you are not a developer, simply paste this entire README into the AI agent of your choice and ask it to walk you through these simple setup steps.)
@@ -51,7 +55,7 @@ Because you compiled it yourself, macOS raises no Gatekeeper warning. (A `.app` 
 1. Browse for your MP4, MOV, or M4V—or drag it into the window.
 2. Type your desired text in up to three independently styled text blocks. The video overlay updates live, preserving your line breaks and wrapping long lines automatically.
 3. Adjust font, size, alignment, color, background, and padding for each text block.
-4. Drag any text block where you want it on the preview, or select it and use the arrow keys (Shift + arrow moves it in larger steps). Dragging near the horizontal or vertical midline snaps to the guideline that appears. Double-click a block to jump straight back into its text, or press Delete to remove it—when it is the only block left, Delete clears its text instead.
+4. Drag any text block where you want it on the preview, or select it and use the arrow keys (Shift + arrow moves it in larger steps). Dragging near the horizontal or vertical midline snaps to the guideline that appears. Double-click a block to jump straight back into its text, or press Delete to remove it—when it is the only block left, Delete clears its text instead. Clicking the video anywhere away from the blocks deselects, which takes the ring off and puts the arrow keys and Delete away until you pick a block again.
 5. Click Clear Video in the left panel to start over. The story text will clear along with the video, but your styling will carry over to the next clip. It does **not** ask first—but Command-Z puts the video and the text back (as it does for adding or removing a block, restyling one, and moving one).
 6. Click Export Video, choose a destination, and wait for the progress bar. Even a large (100+ MB) video file should process in under 30 seconds. The default filename appends `-story` so the source video is never overwritten. Nothing is written to that destination until the encode finishes, so a canceled or failed export leaves no half-written file behind. By default, exports are sized to a 1080-wide Story frame but you can export at the original resolution from the Settings menu.
 
