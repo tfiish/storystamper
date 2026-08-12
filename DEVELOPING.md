@@ -56,10 +56,10 @@ Sources/StoryStamper/
 │   └── FFmpegService.swift      FFmpeg discovery, Process runner, progress parsing
 └── Views/
     ├── ContentView.swift        Three-column layout, export sheet, error alert
-    ├── SourceSidebarView.swift  Left: video info, story text, preview guides, version
+    ├── SourceSidebarView.swift  Left: video info, preview guides, About, version
     ├── VideoPreviewView.swift   Center: preview canvas, drag, safe areas, transport
     ├── PlayerLayerView.swift    Bare AVPlayerLayer host (exact geometry, no chrome)
-    ├── StyleSidebarView.swift   Right: text style, text background, position, export
+    ├── StyleSidebarView.swift   Right: story text, text style, text background, export
     └── ExportStatusView.swift   Progress, completion, and failure sheet
 ```
 
@@ -77,6 +77,12 @@ Sources/StoryStamper/
 ## Releasing
 
 Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist`, and keep `AppInfo.developmentVersion` in step—the sidebar footer reads the bundle when installed and falls back to that constant under `swift run`. Add a `CHANGELOG.md` entry, then `./Scripts/make-app.sh --install`.
+
+## Typography
+
+Text uses exactly five sizes, defined in `Views/Typography.swift`: **8, 10, 13, 16, and 21 pt**. Nothing else is permitted. Use the `Font` helpers (`.appSmall`, `.appSmallDigits`, `.appRegular`, `.appRegularBold`, `.appTitle`) rather than SwiftUI's semantic styles, whose sizes fall off the scale (`.callout` is 12, `.title3` is 15).
+
+SF Symbol and icon sizes are chosen optically and are deliberately outside this scale; a `.font(.system(size:))` on an `Image` is fine, on a `Text` it is not.
 
 ## Style rules for this repo
 

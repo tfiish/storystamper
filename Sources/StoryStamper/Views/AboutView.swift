@@ -12,9 +12,9 @@ struct AboutView: View {
                     .foregroundStyle(.tint)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(AppInfo.displayName)
-                        .font(.title3.weight(.semibold))
+                        .font(.appTitle)
                     Text("Version \(AppInfo.version)")
-                        .font(.caption)
+                        .font(.appSmall)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -32,7 +32,7 @@ struct AboutView: View {
                     Text("Full details are in the README:")
                     Link("github.com/tfiish/storystamper", destination: url)
                 }
-                .font(.callout)
+                .font(.appRegular)
             }
 
             HStack {
@@ -42,7 +42,7 @@ struct AboutView: View {
             }
             .padding(.top, 2)
         }
-        .font(.callout)
+        .font(.appRegular)
         .padding(24)
         .frame(width: 420)
     }

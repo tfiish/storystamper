@@ -247,31 +247,6 @@ final class StoryProject {
         currentTime = seconds
     }
 
-    // MARK: - Placement
-
-    enum QuickPosition {
-        case top, center, bottom
-    }
-
-    /// Horizontally centered placement of the selected block with a
-    /// safe-area-friendly margin.
-    func applyQuickPosition(_ position: QuickPosition) {
-        guard let video else { return }
-        let blockSize = overlay(for: selectedBlock)?.pixelSize ?? .zero
-        let blockHalf = blockSize.height / 2 / video.displaySize.height
-        let y: Double
-        switch position {
-        case .top: y = 0.14 + blockHalf
-        case .center: y = 0.5
-        case .bottom: y = 0.86 - blockHalf
-        }
-        selectedBlock.center = OverlayRenderer.clampedCenter(
-            CGPoint(x: 0.5, y: y),
-            blockSize: blockSize,
-            videoSize: video.displaySize
-        )
-    }
-
     // MARK: - Export
 
     /// All non-empty blocks paired with their positions, in draw order.

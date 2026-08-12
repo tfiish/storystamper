@@ -8,15 +8,51 @@ struct StyleSidebarView: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
+                textSection
                 styleSection
                 backgroundSection
-                positionSection
             }
             .formStyle(.grouped)
 
             exportFooter
         }
         .frame(width: 300)
+    }
+
+    private var textSection: some View {
+        Section("Story Text") {
+            if project.blocks.count > 1 {
+                Picker("Block", selection: $project.selectedIndex) {
+                    ForEach(0..<project.blocks.count, id: \.self) { index in
+                        Text("Block \(index + 1)").tag(index)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
+
+            TextEditor(text: $project.selectedBlock.text)
+                .font(.appRegular)
+                .frame(minHeight: 100)
+                .scrollContentBackground(.hidden)
+
+            HStack {
+                if project.canAddBlock {
+                    Button("Add Text Block") {
+                        project.addBlock()
+                    }
+                }
+                if project.blocks.count > 1 {
+                    Button("Remove", role: .destructive) {
+                        project.removeSelectedBlock()
+                    }
+                }
+            }
+
+            Text("Drag a block on the preview to position it. It snaps to the midlines.")
+                .font(.appSmall)
+                .foregroundStyle(.secondary)
+        }
     }
 
     private var styleSection: some View {
@@ -31,7 +67,7 @@ struct StyleSidebarView: View {
                 HStack(spacing: 8) {
                     Slider(value: $project.selectedBlock.style.fontSize, in: 24...160)
                     Text("\(Int(project.selectedBlock.style.fontSize))")
-                        .font(.caption.monospacedDigit())
+                        .font(.appSmallDigits)
                         .frame(width: 28, alignment: .trailing)
                 }
             }
@@ -65,7 +101,7 @@ struct StyleSidebarView: View {
                         // 100% produces what used to be the "Solid" mode.
                         Slider(value: $project.selectedBlock.style.backgroundOpacity, in: 0.1...1)
                         Text("\(Int(project.selectedBlock.style.backgroundOpacity * 100))%")
-                            .font(.caption.monospacedDigit())
+                            .font(.appSmallDigits)
                             .frame(width: 32, alignment: .trailing)
                     }
                 }
@@ -74,31 +110,21 @@ struct StyleSidebarView: View {
                     HStack(spacing: 8) {
                         Slider(value: $project.selectedBlock.style.padding, in: 0...64)
                         Text("\(Int(project.selectedBlock.style.padding))")
-                            .font(.caption.monospacedDigit())
+                            .font(.appSmallDigits)
                             .frame(width: 28, alignment: .trailing)
                     }
                 }
             }
             .disabled(!enabled)
         } header: {
-            Toggle("Text Background", isOn: $project.selectedBlock.style.backgroundEnabled)
-                .toggleStyle(.checkbox)
-        }
-    }
-
-    private var positionSection: some View {
-        Section("Position") {
-            HStack {
-                Button("Top") { project.applyQuickPosition(.top) }
-                Button("Center") { project.applyQuickPosition(.center) }
-                Button("Bottom") { project.applyQuickPosition(.bottom) }
+            // Label first, checkbox after it.
+            HStack(spacing: 6) {
+                Text("Text Background")
+                Toggle("", isOn: $project.selectedBlock.style.backgroundEnabled)
+                    .toggleStyle(.checkbox)
+                    .labelsHidden()
+                Spacer()
             }
-            .frame(maxWidth: .infinity)
-            .disabled(project.video == nil)
-
-            Text("Drag a text block on the preview to fine-tune. It snaps to the midlines.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
         }
     }
 
@@ -126,7 +152,7 @@ struct StyleSidebarView: View {
 
     private func footerHint(_ message: String) -> some View {
         Text(message)
-            .font(.caption)
+            .font(.appSmall)
             .foregroundStyle(.tertiary)
     }
 

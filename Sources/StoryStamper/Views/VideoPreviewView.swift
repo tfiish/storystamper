@@ -49,9 +49,9 @@ struct VideoPreviewView: View {
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(.secondary)
             Text("Drag a video here")
-                .font(.title3.weight(.semibold))
+                .font(.appTitle)
             Text("MP4, MOV, or M4V")
-                .font(.callout)
+                .font(.appRegular)
                 .foregroundStyle(.secondary)
             Button("Choose Video…") {
                 chooseVideo(for: project)
@@ -311,7 +311,7 @@ private struct TransportBar: View {
             .keyboardShortcut(.space, modifiers: [])
 
             Text(timeString(project.currentTime))
-                .font(.caption.monospacedDigit())
+                .font(.appSmallDigits)
                 .foregroundStyle(.secondary)
 
             Slider(
@@ -330,7 +330,7 @@ private struct TransportBar: View {
             }
 
             Text(timeString(duration))
-                .font(.caption.monospacedDigit())
+                .font(.appSmallDigits)
                 .foregroundStyle(.secondary)
         }
         .padding(.horizontal, 16)

@@ -10,7 +10,6 @@ struct SourceSidebarView: View {
         VStack(spacing: 0) {
             Form {
                 videoSection
-                textSection
                 previewSection
             }
             .formStyle(.grouped)
@@ -28,7 +27,7 @@ struct SourceSidebarView: View {
             Button("About") { showingAbout = true }
                 .controlSize(.small)
             Text("\(AppInfo.displayName) v\(AppInfo.version)")
-                .font(.caption)
+                .font(.appSmall)
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
@@ -66,43 +65,11 @@ struct SourceSidebarView: View {
         }
     }
 
-    private var textSection: some View {
-        Section("Story Text") {
-            if project.blocks.count > 1 {
-                Picker("Block", selection: $project.selectedIndex) {
-                    ForEach(0..<project.blocks.count, id: \.self) { index in
-                        Text("Block \(index + 1)").tag(index)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-
-            TextEditor(text: $project.selectedBlock.text)
-                .font(.body)
-                .frame(minHeight: 110)
-                .scrollContentBackground(.hidden)
-
-            HStack {
-                if project.canAddBlock {
-                    Button("Add Text Block") {
-                        project.addBlock()
-                    }
-                }
-                if project.blocks.count > 1 {
-                    Button("Remove", role: .destructive) {
-                        project.removeSelectedBlock()
-                    }
-                }
-            }
-        }
-    }
-
     private var previewSection: some View {
         Section("Preview") {
             Toggle("Show story-safe areas", isOn: $project.showSafeArea)
             Text("Approximates where Instagram's UI covers a Story on the top and bottom.")
-                .font(.caption)
+                .font(.appSmall)
                 .foregroundStyle(.secondary)
         }
     }

@@ -16,7 +16,7 @@ struct ExportStatusView: View {
 
             case .exporting(let progress):
                 Text("Exporting Video")
-                    .font(.headline)
+                    .font(.appRegularBold)
 
                 ProgressView(value: progress)
                     .progressViewStyle(.linear)
@@ -26,7 +26,7 @@ struct ExportStatusView: View {
                     .animation(.linear(duration: 0.6), value: progress)
 
                 Text(statusLine(progress: progress))
-                    .font(.caption.monospacedDigit())
+                    .font(.appSmallDigits)
                     .foregroundStyle(.secondary)
 
                 Button("Cancel") {
@@ -38,7 +38,7 @@ struct ExportStatusView: View {
                     .font(.system(size: 36))
                     .foregroundStyle(.green)
                 Text("Export complete")
-                    .font(.headline)
+                    .font(.appRegularBold)
                 HStack(spacing: 12) {
                     Button("Reveal in Finder") {
                         project.revealExportInFinder()
@@ -54,9 +54,9 @@ struct ExportStatusView: View {
                     .font(.system(size: 32))
                     .foregroundStyle(.orange)
                 Text("Export failed")
-                    .font(.headline)
+                    .font(.appRegularBold)
                 Text(message)
-                    .font(.callout)
+                    .font(.appRegular)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 320)
