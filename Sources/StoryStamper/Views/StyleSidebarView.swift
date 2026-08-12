@@ -77,10 +77,8 @@ struct StyleSidebarView: View {
             LabeledContent("Font") {
                 Picker("Font", selection: $project.selectedBlock.style.font) {
                     ForEach(FontChoice.allCases) { choice in
-                        // The sample letter is set in the face it selects, so
-                        // the control shows its own effect.
-                        Text(verbatim: "A")
-                            .font(choice.sampleFont)
+                        // An image, not styled text: see FontSample.
+                        FontSample.image(for: choice)
                             .help(choice.displayName)
                             .accessibilityLabel(choice.displayName)
                             .tag(choice)

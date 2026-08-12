@@ -13,6 +13,8 @@ Purpose of this document: a human-readable record of user-visible changes per ve
 - The window's minimum height is now composed from the story text field's minimum plus the chrome around it, so raising one raises the other rather than quietly introducing a scroll.
 - Documented, in code, which block's styling is the one that persists between launches: the last one you edited.
 - Reworded the Settings checkbox to Confirm before deletion, and the preview toggle to Area Guides.
+- The Font picker now shows a real specimen in each typeface it offers, rather than four identical letters. A segmented control replaces styled text with its own font, so the specimens are drawn as images instead, and the specimen is “Aa” rather than one letter because monospace shows in the advance width rather than the letterform.
+- The System appearance button is a computer rather than a half-filled circle, and all three tooltips are one word.
 
 ## 1.6.0 — 2026-08-12
 
@@ -28,7 +30,7 @@ Purpose of this document: a human-readable record of user-visible changes per ve
 - The open panel and drag-and-drop now enforce the same file types; the panel used to accept formats a drop would reject.
 - The export time estimate no longer jumps from “90 seconds” to “2 minutes”.
 - Videos with no audio track no longer get pointless audio encoder settings.
-- Copy and polish: Export Video takes an ellipsis, the export sheet's three headings are consistently title case, a failed export is red rather than orange, the video's duration is shown in the sidebar, and “story-safe area guides” is now the term everywhere.
+- Copy and polish: the export sheet's three headings are consistently title case, a failed export is red rather than orange, the video's duration is shown in the sidebar, and “story-safe area guides” is now the term everywhere.
 - Standardized the remaining untokenized values—color alpha, motion durations, and stroke patterns—so no view inlines a raw number. Removed two text sizes and three other members that nothing used.
 
 ## 1.5.0 — 2026-08-12

@@ -106,7 +106,7 @@ struct SourceSidebarView: View {
                     ForEach(AppearanceChoice.allCases) { choice in
                         Label(choice.displayName, systemImage: choice.symbolName)
                             .labelStyle(.iconOnly)
-                            .help(choice.help)
+                            .help(choice.displayName)
                             .tag(choice)
                     }
                 }

@@ -93,6 +93,8 @@ enum Motion {
 enum IconSize {
     /// A mark drawn inside another control, such as the tick on a swatch.
     static let badge: CGFloat = 9
+    /// A letterform specimen inside a segmented control.
+    static let sample: CGFloat = 14
     static let small: CGFloat = 12
     static let medium: CGFloat = 16
     static let large: CGFloat = 26

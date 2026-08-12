@@ -68,17 +68,6 @@ enum FontChoice: String, Codable, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// The letter shown in the segmented picker, set in the face it selects,
-    /// so the control previews its own effect.
-    var sampleFont: Font {
-        switch self {
-        case .bold: return .system(size: TextSize.regular, weight: .heavy)
-        case .regular: return .system(size: TextSize.regular, weight: .regular)
-        case .serif: return .system(size: TextSize.regular, weight: .bold, design: .serif)
-        case .monospaced: return .system(size: TextSize.regular, weight: .medium, design: .monospaced)
-        }
-    }
-
     func nsFont(size: CGFloat) -> NSFont {
         switch self {
         case .bold:

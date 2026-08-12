@@ -20,17 +20,9 @@ enum AppearanceChoice: String, Codable, CaseIterable, Identifiable, Sendable {
 
     var symbolName: String {
         switch self {
-        case .system: return "circle.lefthalf.filled"
+        case .system: return "desktopcomputer"
         case .light: return "sun.max"
         case .dark: return "moon"
-        }
-    }
-
-    var help: String {
-        switch self {
-        case .system: return "Follow the system appearance"
-        case .light: return "Always use the light appearance"
-        case .dark: return "Always use the dark appearance"
         }
     }
 

@@ -65,7 +65,7 @@ The app icon is generated from [Scripts/make-icon.swift](Scripts/make-icon.swift
 3. Adjust font, size, alignment, color, background, and padding below it. Font and alignment are shown as sample glyphs rather than menus, so each control previews its own effect.
 4. Drag any text block where you want it on the preview, or select it and use the arrow keys—Shift-arrow moves farther. Dragging near the horizontal or vertical midline snaps to it, and a guide line appears to show the snap.
 5. Click the X in the top-right corner of the video to unload it and start over. It asks first if you have typed anything, the story text clears, and your styling carries over to the next clip.
-6. Optionally toggle the story-safe area guides, which approximate where Instagram's UI covers a Story (they never appear in the export), and set the app's appearance to System, Light, or Dark.
+6. Optionally turn on Area Guides, which approximate where Instagram's UI covers the top and bottom of a Story (they never appear in the export), and set the app's appearance to System, Light, or Dark.
 7. Click Export Video, choose a destination, and wait for the progress bar. The default filename appends `-story` so the source is never overwritten. Nothing is written to that destination until the encode finishes, so a cancelled or failed export leaves no half-written file behind.
 
 Presentation settings (font, size, colors, background, padding, and alignment) persist between launches, as do your appearance choice, the width of the style sidebar, and whether destructive actions ask first. The text itself intentionally does not.
