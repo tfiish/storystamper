@@ -21,7 +21,7 @@ struct StoryStamperApp: App {
         WindowGroup("Story Stamper") {
             ContentView()
         }
-        .defaultSize(width: 1080, height: 720)
+        .defaultSize(width: 1240, height: 820)
     }
 }
 

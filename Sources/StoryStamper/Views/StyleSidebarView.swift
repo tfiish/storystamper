@@ -1,86 +1,22 @@
 import SwiftUI
 
-/// The right pane: video details, story text, style controls, placement, and
-/// the export button.
-struct OverlayEditorView: View {
+/// Right sidebar: how the text looks and where it sits, plus the export
+/// action. All controls edit the selected block.
+struct StyleSidebarView: View {
     @Bindable var project: StoryProject
 
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                videoSection
-                textSection
                 styleSection
                 backgroundSection
                 positionSection
-                previewSection
             }
             .formStyle(.grouped)
 
             exportFooter
         }
-        .frame(width: 320)
-    }
-
-    // MARK: - Sections
-
-    private var videoSection: some View {
-        Section("Video") {
-            if let video = project.video {
-                LabeledContent("File") {
-                    Text(video.filename)
-                        .truncationMode(.middle)
-                        .lineLimit(1)
-                        .help(video.url.path)
-                }
-                LabeledContent("Size") {
-                    Text("\(Int(video.displaySize.width)) × \(Int(video.displaySize.height))")
-                }
-                if video.nominalFrameRate > 0 {
-                    LabeledContent("Frame rate") {
-                        Text(String(format: "%.5g fps", video.nominalFrameRate))
-                    }
-                }
-                Button("Replace Video…") {
-                    chooseVideo(for: project)
-                }
-            } else {
-                Text("No video loaded")
-                    .foregroundStyle(.secondary)
-                Button("Choose Video…") {
-                    chooseVideo(for: project)
-                }
-            }
-        }
-    }
-
-    private var textSection: some View {
-        Section("Story Text") {
-            if project.blocks.count > 1 {
-                Picker("Block", selection: $project.selectedIndex) {
-                    ForEach(0..<project.blocks.count, id: \.self) { index in
-                        Text("Block \(index + 1)").tag(index)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-
-            TextEditor(text: $project.selectedBlock.text)
-                .font(.body)
-                .frame(minHeight: 72)
-                .scrollContentBackground(.hidden)
-
-            if project.canAddBlock {
-                Button("Add Second Block") {
-                    project.addBlock()
-                }
-            } else {
-                Button("Remove This Block", role: .destructive) {
-                    project.removeSelectedBlock()
-                }
-            }
-        }
+        .frame(width: 300)
     }
 
     private var styleSection: some View {
@@ -116,7 +52,7 @@ struct OverlayEditorView: View {
     }
 
     private var backgroundSection: some View {
-        Section("Background") {
+        Section("Text Background") {
             Picker("Style", selection: $project.selectedBlock.style.backgroundMode) {
                 ForEach(BackgroundMode.allCases) { mode in
                     Text(mode.displayName).tag(mode)
@@ -164,16 +100,7 @@ struct OverlayEditorView: View {
             .frame(maxWidth: .infinity)
             .disabled(project.video == nil)
 
-            Text("Drag a text block on the preview to fine-tune. Position buttons move the selected block.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private var previewSection: some View {
-        Section("Preview") {
-            Toggle("Show Story safe areas", isOn: $project.showSafeArea)
-            Text("Approximates where Instagram's UI covers a Story. Never exported.")
+            Text("Drag a text block on the preview to fine-tune. It snaps to the midlines.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

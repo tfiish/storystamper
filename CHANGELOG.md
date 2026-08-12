@@ -2,6 +2,12 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.3.0 — 2026-08-11
+
+- Split the controls into two sidebars so nothing needs vertical scrolling. The left holds the video, story text, and preview guides; the right holds text style, text background, position, and export.
+- Renamed the Background section to Text Background.
+- Added a version label in the bottom-left corner.
+
 ## 1.2.0 — 2026-08-11
 
 - **Export is dramatically faster.** It now uses Apple's hardware H.264 encoder when available, falling back to libx264 otherwise. A 38-second 4K clip went from over ten minutes to about twenty seconds. Audio is copied rather than re-encoded when the source is already AAC.

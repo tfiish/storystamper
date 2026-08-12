@@ -16,12 +16,14 @@ struct ContentView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            VideoPreviewView(project: project)
-                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+            SourceSidebarView(project: project)
             Divider()
-            OverlayEditorView(project: project)
+            VideoPreviewView(project: project)
+                .frame(minWidth: 360, maxWidth: .infinity, maxHeight: .infinity)
+            Divider()
+            StyleSidebarView(project: project)
         }
-        .frame(minWidth: 860, minHeight: 620)
+        .frame(minWidth: 1000, minHeight: 640)
         .sheet(isPresented: exportSheetVisible) {
             ExportStatusView(project: project)
                 .interactiveDismissDisabled(isExporting)

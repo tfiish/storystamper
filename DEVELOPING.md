@@ -47,17 +47,19 @@ Sources/StoryStamper/
 │   │                            text blocks (up to two), selection, and export
 │   ├── OverlayStyle.swift       Codable style settings + font/color/alignment enums
 │   ├── VideoInfo.swift          One-shot AVFoundation probe (rotation-aware size)
-│   └── SettingsStore.swift      UserDefaults persistence for style settings
+│   ├── SettingsStore.swift      UserDefaults persistence for style settings
+│   └── AppInfo.swift            Display name and version for the sidebar footer
 ├── Rendering/
 │   └── OverlayRenderer.swift    Core Graphics text-block raster + placement math
 ├── Export/
 │   ├── VideoExporter.swift      Temp PNG + FFmpeg argument construction
 │   └── FFmpegService.swift      FFmpeg discovery, Process runner, progress parsing
 └── Views/
-    ├── ContentView.swift        Window layout, export sheet, error alert
-    ├── VideoPreviewView.swift   Drop zone, preview canvas, drag, safe areas, transport
+    ├── ContentView.swift        Three-column layout, export sheet, error alert
+    ├── SourceSidebarView.swift  Left: video info, story text, preview guides, version
+    ├── VideoPreviewView.swift   Center: preview canvas, drag, safe areas, transport
     ├── PlayerLayerView.swift    Bare AVPlayerLayer host (exact geometry, no chrome)
-    ├── OverlayEditorView.swift  Right-hand controls panel
+    ├── StyleSidebarView.swift   Right: text style, text background, position, export
     └── ExportStatusView.swift   Progress, completion, and failure sheet
 ```
 
@@ -71,6 +73,10 @@ Sources/StoryStamper/
 - **Font size and padding are authored against a 1080-wide frame** and multiplied by `min(width, height) / 1080` in `OverlayRenderer.scaled(_:for:)`. Window size never affects them; video resolution scales them proportionally so a setting looks the same on 1080p and 4K.
 - **Export prefers `h264_videotoolbox`.** `FFmpegService.supportsVideoToolbox` probes `ffmpeg -encoders` per export (about 30 ms) and `VideoExporter` falls back to libx264 `veryfast` when it is missing. On a 38-second 4K clip this is the difference between roughly 20 seconds and over ten minutes, so do not "simplify" it back to a single software encoder.
 - **Progress is read with `readabilityHandler`, not `FileHandle.bytes`.** The async byte sequence buffers so aggressively that progress arrived in one late lump; the handler-based reader delivers FFmpeg's twice-a-second updates live.
+
+## Releasing
+
+Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist`, and keep `AppInfo.developmentVersion` in step—the sidebar footer reads the bundle when installed and falls back to that constant under `swift run`. Add a `CHANGELOG.md` entry, then `./Scripts/make-app.sh --install`.
 
 ## Style rules for this repo
 
