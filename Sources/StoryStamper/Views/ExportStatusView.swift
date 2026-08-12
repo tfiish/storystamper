@@ -15,7 +15,7 @@ struct ExportStatusView: View {
                 EmptyView()
 
             case .exporting(let progress):
-                Text("Exporting Story Video")
+                Text("Exporting Video")
                     .font(.headline)
 
                 ProgressView(value: progress)

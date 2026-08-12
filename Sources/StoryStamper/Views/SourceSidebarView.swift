@@ -100,8 +100,8 @@ struct SourceSidebarView: View {
 
     private var previewSection: some View {
         Section("Preview") {
-            Toggle("Show Story safe areas", isOn: $project.showSafeArea)
-            Text("Approximates where Instagram's UI covers a Story. Never exported.")
+            Toggle("Show story-safe areas", isOn: $project.showSafeArea)
+            Text("Approximates where Instagram's UI covers a Story on the top and bottom.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

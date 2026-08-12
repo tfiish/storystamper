@@ -107,7 +107,7 @@ struct StyleSidebarView: View {
             Button {
                 project.beginExport()
             } label: {
-                Text("Export Story Video")
+                Text("Export Video")
                     .frame(maxWidth: .infinity)
             }
             .controlSize(.large)
@@ -127,7 +127,7 @@ struct StyleSidebarView: View {
     private func footerHint(_ message: String) -> some View {
         Text(message)
             .font(.caption)
-            .foregroundStyle(.secondary)
+            .foregroundStyle(.tertiary)
     }
 
     private func styleBinding(_ keyPath: WritableKeyPath<OverlayStyle, RGBAColor>) -> Binding<RGBAColor> {

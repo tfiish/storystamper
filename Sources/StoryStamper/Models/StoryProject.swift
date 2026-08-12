@@ -296,7 +296,7 @@ final class StoryProject {
         panel.allowedContentTypes = [.mpeg4Movie]
         panel.canCreateDirectories = true
         panel.nameFieldStringValue = video.url.deletingPathExtension().lastPathComponent + "-story.mp4"
-        panel.title = "Export Story Video"
+        panel.title = "Export Video"
         guard panel.runModal() == .OK, let outputURL = panel.url else { return }
 
         exportPhase = .exporting(progress: 0)
