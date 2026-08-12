@@ -38,7 +38,11 @@ struct IconButton: View {
                         Circle()
                             .fill(Color.black.opacity(Opacity.scrim))
                             .overlay {
-                                Circle().strokeBorder(Color.white.opacity(Opacity.border), lineWidth: BorderWidth.hairline)
+                                // Full white, matching the glyph inside it. A
+                                // faint ring read as a smudge on the video
+                                // rather than as the edge of a control; the
+                                // dark fill is what separates the two.
+                                Circle().strokeBorder(Color.white, lineWidth: BorderWidth.hairline)
                             }
                     }
                 }

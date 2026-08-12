@@ -2,6 +2,16 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 2.0.0 — 2026-08-12
+
+The consistency audit is finished and its file is gone. 1.9.0 through 1.9.2 did the work; this closes the last three things and cuts the version that says so.
+
+- **The filename in the left sidebar has lost its hover label.** It held the full path, which is wider than the pane the label pops up in—so it clipped at both ends and told you less than the filename already showing. VoiceOver still reads the whole path, where length costs nothing. That is the same split the color swatches settled on: the spoken label carries what the pixels cannot.
+- **The ring around the X over the video is full white**, matching the glyph inside it. At a third opacity it read as a smudge on the footage rather than as the edge of a button; the dark fill is what separates the control from the video, and the ring's job is only to finish its edge.
+- The hint under the export button reads **"Enter text to export."** The panel is already called Story Text.
+
+Every finding from the audit is now either fixed or written down as a decision in the places that would otherwise look like drift—DEVELOPING.md for the quit alert and the sheet shapes, the code itself for the preview's two insets. Nothing was left in a file that had to be remembered.
+
 ## 1.9.2 — 2026-08-12
 
 The last of the consistency audit that could be settled without looking at the running app. Almost none of this is visible; the point of it is that the next change cannot quietly undo the previous ones.
@@ -21,7 +31,7 @@ The last of the consistency audit that could be settled without looking at the r
 
 ## 1.9.0 — 2026-08-12
 
-The first pass of a full consistency audit ([AUDIT.md](AUDIT.md)). Mostly words, and the places where one action had picked up three names.
+The first pass of a full consistency audit. Mostly words, and the places where one action had picked up three names.
 
 - **One name per action, everywhere it appears.** Loading a video was called Open in the File menu, Replace in the sidebar, and Choose on the drop screen and in the panel title—two of them visible at once on the empty screen. It is now **Open Video…** until something is loaded and **Replace Video…** afterwards, in all four places. Unloading was called Unload on the button and Clear in the undo stack, so clicking the X and opening the Edit menu gave you "Undo Clear Video"; both say **Unload Video** now. The sidebar's **Remove** button, sitting next to Add Text Block, is now **Remove Text Block** like its menu item.
 - **Commands that open a panel say so.** Every command that asks something before it acts now ends in an ellipsis—Open, Replace, Export, Settings, About. Export Video in particular used to read as though it started the export on click, when a save panel comes first.

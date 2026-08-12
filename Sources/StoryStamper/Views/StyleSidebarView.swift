@@ -201,7 +201,7 @@ struct StyleSidebarView: View {
                     // File menu, and the open panel all use for this action.
                     footerHint("Open a video to enable these controls.")
                 } else if !project.hasStoryText {
-                    footerHint("Enter story text to export.")
+                    footerHint("Enter text to export.")
                 }
             }
         }

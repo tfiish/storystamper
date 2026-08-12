@@ -50,10 +50,11 @@ struct SourceSidebarView: View {
                     Text(video.filename)
                         .truncationMode(.middle)
                         .lineLimit(1)
-                        .hoverLabel(video.url.path)
-                        // The name on screen is truncated to one line, so the
-                        // full path is information the hover label has and a
-                        // screen reader would otherwise not.
+                        // No hover label. The full path in one is wider than
+                        // the pane it pops up in, so it clipped at both ends
+                        // and told you less than the filename already does.
+                        // VoiceOver still gets the path, where length costs
+                        // nothing—the same split the color swatches take.
                         .accessibilityLabel(video.filename)
                         .accessibilityValue(video.url.path)
                     Text(summary(for: video))

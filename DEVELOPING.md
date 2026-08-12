@@ -156,6 +156,18 @@ For launch time, which the smoke test cannot cover, quit the app first and time 
 
 Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist`, and keep `AppInfo.developmentVersion` in step—the sidebar footer reads the bundle when installed and falls back to that constant under `swift run`. Add a `CHANGELOG.md` entry, then `./Scripts/make-app.sh --install`.
 
+Then tag it, and push the tag. GitHub's Releases page is built from tags, so a release that is only a commit does not appear there at all:
+
+```bash
+git tag -a 2.0.0 -m "Story Stamper 2.0.0"
+```
+
+```bash
+git push origin main --follow-tags
+```
+
+The tag name is the bare version, no `v` prefix, matching `CFBundleShortVersionString` exactly—one string for the plist, the changelog heading, and the tag, so there is nothing to reconcile later. Annotated (`-a`) rather than lightweight, so the tag carries its own date and author. **Every version from 2.0.0 on gets one**; the releases before it predate the repository being public and have no tags to backfill.
+
 ## Design system
 
 Every design value the interface draws with lives in [DesignSystem/DesignSystem.swift](Sources/StoryStamper/DesignSystem/DesignSystem.swift)—including color alpha, motion durations, stroke patterns, and named colors, not just geometry. Views contain no raw literals; if you need a value that is not there, add it there first.
