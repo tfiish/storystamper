@@ -112,8 +112,6 @@ struct VideoPreviewView: View {
                         showVertical: snappedToCenterX,
                         showHorizontal: snappedToCenterY
                     )
-
-                    clearButton(videoRect: videoRect)
                 }
             }
         }
@@ -137,22 +135,6 @@ struct VideoPreviewView: View {
             width: size.width,
             height: size.height
         )
-    }
-
-    private func clearButton(videoRect: CGRect) -> some View {
-        // Inset from the video's corner by one spacing step, expressed from
-        // the button's own size so the gap stays right if either changes.
-        let inset = Metrics.overlayButton / 2 + Spacing.small
-        return IconButton(
-            systemName: "xmark",
-            label: "Unload video and clear story text",
-            glyphSize: IconSize.small,
-            glyphWeight: .bold,
-            style: .scrim
-        ) {
-            project.requestClearVideo()
-        }
-        .position(x: videoRect.maxX - inset, y: videoRect.minY + inset)
     }
 
     private func overlayView(_ overlay: RenderedOverlay, blockIndex: Int, video: VideoInfo, videoRect: CGRect) -> some View {

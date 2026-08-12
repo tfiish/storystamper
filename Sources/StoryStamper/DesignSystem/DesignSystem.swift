@@ -231,8 +231,9 @@ enum Metrics {
     static let readoutWidth: CGFloat = 32
     /// Color preset swatch diameter.
     static let swatch: CGFloat = 16
-    /// Round button floating over the video, and the tap target for any
-    /// icon-only button.
+    /// The tap target for any icon-only button. Named for the round button
+    /// that used to float over the video; the name outlived it, and renaming
+    /// a token to match one caller's history is not worth a diff.
     static let overlayButton: CGFloat = 24
     /// One segment of a glyph picker, matching a small segmented control.
     static let segmentHeight: CGFloat = 22

@@ -2,6 +2,12 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 2.0.1 — 2026-08-12
+
+- **The X over the video is gone. Clearing a video is now a button in the left panel**, directly under Replace Video, where the other thing you can do to a loaded clip already lives. A destructive control sitting on top of the thing being judged was the wrong place for it, and it brought a problem with it: a disc and a ring drawn over arbitrary footage have no shade that works against every frame. Naming the button retires the question instead of answering it.
+- **The action is called Clear Video everywhere**—the button, the Video menu, and the undo step. It was Unload Video in 2.0.0. One name, one action, in whichever menu you meet it.
+- Under the hood: `IconButton` has lost its second style. The dark disc existed for that one X, so it went with it, and the play button—now the only icon-only button in the app—no longer carries a branch it never took.
+
 ## 2.0.0 — 2026-08-12
 
 The consistency audit is finished and its file is gone. 1.9.0 through 1.9.2 did the work; this closes the last three things and cuts the version that says so.

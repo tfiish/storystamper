@@ -488,11 +488,11 @@ final class StoryProject {
         allowedExtensions.contains(url.pathExtension.lowercased())
     }
 
-    /// Unloads the video and returns to the drop screen, clearing the story
+    /// Clears the video and returns to the drop screen, resetting the story
     /// text back to a single empty block. Styling carries over, since those
     /// settings are meant to persist.
     private func clearVideo() {
-        registerUndo("Unload Video")
+        registerUndo("Clear Video")
         pause()
         loadTask?.cancel()
         loadTask = nil

@@ -70,7 +70,7 @@ struct StoryCommands: Commands {
 
             Divider()
 
-            Button("Unload Video") { project.requestClearVideo() }
+            Button("Clear Video") { project.requestClearVideo() }
                 .disabled(project.video == nil)
         }
 

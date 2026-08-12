@@ -68,6 +68,15 @@ struct SourceSidebarView: View {
                 Button("Replace Video") {
                     project.chooseVideo()
                 }
+
+                // Clearing used to be an X floating over the video, which put a
+                // destructive control on top of the thing being judged and
+                // made its ring compete with the footage behind it. Here it
+                // sits with the other thing you can do to a loaded video, and
+                // is named rather than drawn.
+                Button("Clear Video", role: .destructive) {
+                    project.requestClearVideo()
+                }
             } else {
                 // No button here: the drop prompt filling the pane alongside
                 // this already carries the call to action, and two differently

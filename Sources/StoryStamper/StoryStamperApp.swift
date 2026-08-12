@@ -122,7 +122,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             project.cancelExport()
         } else if project.hasStoryText {
-            // Gated on typed text, not on a loaded video. Unloading a video is
+            // Gated on typed text, not on a loaded video. Clearing a video is
             // undoable and costs nothing to redo—and the app never remembers
             // which file was open anyway—so asking about one is a click spent
             // guarding something that was never kept. Text is the only thing

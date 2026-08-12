@@ -223,7 +223,7 @@ One action, one name, wherever it is reached from—the control, the menu item, 
 | Action | Name |
 | --- | --- |
 | Load a video | **Open Video** when none is loaded, **Replace Video** when one is |
-| Discard the video | **Unload Video** |
+| Discard the video | **Clear Video** |
 | Add a block | **Add Block** |
 | Remove a block | **Remove Block** |
 | Select one | **Select Block 1** |
