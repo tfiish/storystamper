@@ -35,6 +35,12 @@ struct RGBAColor: Codable, Hashable, Sendable {
         NSColor(srgbRed: red, green: green, blue: blue, alpha: overrideAlpha ?? alpha)
     }
 
+    /// Rough perceptual luminance, used to pick a mark that stays legible on
+    /// top of the color itself.
+    var isLight: Bool {
+        0.299 * red + 0.587 * green + 0.114 * blue > 0.6
+    }
+
     /// Loose match, since a color that round-trips through NSColor and the
     /// system picker can come back a hair off its original components.
     func matches(_ other: RGBAColor) -> Bool {

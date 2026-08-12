@@ -91,6 +91,8 @@ enum Motion {
 /// SF Symbol sizes. Kept separate from `TextSize` because glyphs are balanced
 /// optically against their surroundings rather than set on the type scale.
 enum IconSize {
+    /// A mark drawn inside another control, such as the tick on a swatch.
+    static let badge: CGFloat = 9
     static let small: CGFloat = 12
     static let medium: CGFloat = 16
     static let large: CGFloat = 26
@@ -132,9 +134,14 @@ enum Metrics {
     /// Derived, so changing a sidebar or the preview minimum can never leave
     /// the window able to squeeze the preview below its own minimum.
     static let minWindowWidth: CGFloat = sourceSidebarWidth + minStyleSidebarWidth + minPreviewWidth + BorderWidth.hairline * 2
-    /// Tall enough that neither sidebar's form needs to scroll with three text
-    /// blocks present, which is the tallest the right sidebar ever gets.
-    static let minWindowHeight: CGFloat = 640
+    /// The style sidebar is the taller pane, and this is the height it needs
+    /// to show all three sections without scrolling. Only the text editor's
+    /// minimum is a number we pick; the rest is the measured height of the
+    /// fixed rows and the pinned footer around it. Naming the two separately
+    /// means raising the editor's minimum raises the window's too, rather
+    /// than silently introducing the scroll 1.3.0 set out to remove.
+    static let styleSidebarChromeHeight: CGFloat = 540
+    static let minWindowHeight: CGFloat = textEditorMinHeight + styleSidebarChromeHeight
     static let defaultWindowWidth: CGFloat = 1240
     static let defaultWindowHeight: CGFloat = 820
 

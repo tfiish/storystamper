@@ -3,10 +3,6 @@ import SwiftUI
 /// Sheet shown while an export runs, and after it finishes or fails.
 struct ExportStatusView: View {
     @Bindable var project: StoryProject
-    /// Ticks once a second purely so the remaining-time estimate stays fresh
-    /// between FFmpeg's progress updates.
-    @State private var now = Date()
-    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(spacing: Spacing.large) {
@@ -15,24 +11,10 @@ struct ExportStatusView: View {
                 EmptyView()
 
             case .exporting(let progress):
-                Text("Exporting Video")
-                    .font(.appRegularBold)
-
-                ProgressView(value: progress)
-                    .progressViewStyle(.linear)
-                    .frame(width: Metrics.progressWidth)
-                    // FFmpeg reports about twice a second; interpolating
-                    // between updates keeps the bar from stepping.
-                    .animation(.linear(duration: Motion.progress), value: progress)
-
-                Text(statusLine(progress: progress))
-                    .font(.appSmallDigits)
-                    .foregroundStyle(.secondary)
-
-                Button("Cancel") {
-                    project.cancelExport()
-                }
-                .keyboardShortcut(.cancelAction)
+                // Split out so its once-a-second clock exists only while an
+                // export is running, rather than ticking through the finished
+                // and failed states where nothing reads it.
+                ExportProgressView(project: project, progress: progress)
 
             case .completed:
                 Image(systemName: "checkmark.circle.fill")
@@ -72,13 +54,51 @@ struct ExportStatusView: View {
         }
         .padding(Spacing.xLarge)
         .frame(minWidth: Metrics.sheetMinWidth)
+    }
+}
+
+/// The running half of the export sheet. Owns the clock, so the clock lives
+/// exactly as long as the progress readout that depends on it.
+private struct ExportProgressView: View {
+    @Bindable var project: StoryProject
+    let progress: Double
+
+    /// Ticks once a second purely so the remaining-time estimate stays fresh
+    /// between FFmpeg's progress updates.
+    @State private var now = Date()
+    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
+    var body: some View {
+        // A VStack rather than a Group, because modifiers on a Group are
+        // applied to each child—`onReceive` there would open four
+        // subscriptions to the same clock instead of one.
+        VStack(spacing: Spacing.large) {
+            Text("Exporting Video")
+                .font(.appRegularBold)
+
+            ProgressView(value: progress)
+                .progressViewStyle(.linear)
+                .frame(width: Metrics.progressWidth)
+                // FFmpeg reports about twice a second; interpolating between
+                // updates keeps the bar from stepping.
+                .animation(.linear(duration: Motion.progress), value: progress)
+
+            Text(statusLine)
+                .font(.appSmallDigits)
+                .foregroundStyle(.secondary)
+
+            Button("Cancel") {
+                project.cancelExport()
+            }
+            .keyboardShortcut(.cancelAction)
+        }
         .onReceive(clock) { now = $0 }
     }
 
     /// Percentage plus a remaining-time estimate once there is enough data to
     /// make one honest. The tail of an export is the container rewrite for
     /// faststart, which reports no progress, so it gets its own label.
-    private func statusLine(progress: Double) -> String {
+    private var statusLine: String {
         let percent = Int(progress * 100)
         guard progress < 0.995 else { return "Finishing up…" }
         guard let started = project.exportStartedAt, progress > 0.03 else {

@@ -2,6 +2,17 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.6.1 — 2026-08-12
+
+- Choose Video, Replace Video, Export Video, and Settings no longer take an ellipsis, so the four buttons that open something are punctuated alike.
+- The empty state offers Choose Video once rather than twice—the drop prompt keeps it, and the sidebar just reports that no video is loaded.
+- The selected color swatch now shows a tick as well as a ring, so selection is not carried by color alone.
+- The Opacity slider says why it stops at 10%, and points at the Text Background checkbox for removing the box entirely.
+- Text Style now says that size and padding are relative to a 1080-wide frame, which is why the same numbers look right on 1080p and 4K.
+- The export sheet's once-a-second clock runs only while an export is running, instead of ticking through the finished and failed states as well.
+- The window's minimum height is now composed from the story text field's minimum plus the chrome around it, so raising one raises the other rather than quietly introducing a scroll.
+- Documented, in code, which block's styling is the one that persists between launches: the last one you edited.
+
 ## 1.6.0 — 2026-08-12
 
 - **Cancelled and failed exports no longer leave a broken file behind.** FFmpeg now encodes into a scratch folder, and the finished video is moved to your chosen destination only after it completes. That folder is also swept at launch and at quit, so a crash or a force quit cannot leave debris.

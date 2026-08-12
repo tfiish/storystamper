@@ -196,6 +196,11 @@ final class StoryProject {
         )
     }
 
+    /// What persists between launches is the style of the block you last
+    /// *edited*, not block 1 and not whichever block is selected—changing the
+    /// selection does not touch `blocks`, so it does not reach this method. It
+    /// is worth knowing that with three differently styled blocks, the one
+    /// that survives a relaunch is the one you last touched a control for.
     private func handleBlocksChange() {
         refreshOverlays()
         let style = selectedBlock.style

@@ -119,6 +119,10 @@ struct StyleSidebarView: View {
             LabeledContent("Color") {
                 ColorRow(presets: ColorPreset.text, selection: styleBinding(\.textColor))
             }
+
+            Text("Size and padding are relative to a 1080-wide frame, so the same numbers look right on 1080p and 4K footage.")
+                .font(.appSmall)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -139,6 +143,10 @@ struct StyleSidebarView: View {
                         Slider(value: $project.selectedBlock.style.backgroundOpacity, in: 0.1...1)
                             .accessibilityLabel("Background opacity")
                             .accessibilityValue("\(Int(project.selectedBlock.style.backgroundOpacity * 100)) percent")
+                            // The slider stops at 10% so "enabled" always
+                            // means visible; removing the box entirely is the
+                            // checkbox's job, and nothing else says so.
+                            .help("Ranges from 10% to 100%. Uncheck Text Background to remove the box entirely.")
                         Text("\(Int(project.selectedBlock.style.backgroundOpacity * 100))%")
                             .font(.appSmallDigits)
                             .frame(width: Metrics.readoutWidth, alignment: .trailing)
@@ -192,7 +200,7 @@ struct StyleSidebarView: View {
                 Button {
                     project.beginExport()
                 } label: {
-                    Text("Export Video…")
+                    Text("Export Video")
                         .frame(maxWidth: .infinity)
                 }
                 .controlSize(.large)
@@ -244,6 +252,15 @@ private struct ColorRow: View {
                                 .strokeBorder(Color.accentColor, lineWidth: BorderWidth.emphasis)
                                 .padding(-Spacing.tight)
                                 .opacity(isSelected ? 1 : 0)
+                        }
+                        // A second channel for selection, since an accent ring
+                        // alone is hard to pick out against a dark swatch.
+                        .overlay {
+                            if isSelected {
+                                Image(systemName: "checkmark")
+                                    .font(.system(size: IconSize.badge, weight: .bold))
+                                    .foregroundStyle(preset.color.isLight ? Color.black : Color.white)
+                            }
                         }
                 }
                 .buttonStyle(.plain)
