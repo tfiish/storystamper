@@ -28,8 +28,9 @@ struct AboutView: View {
             Text("Everything runs locally on your Mac. Nothing is uploaded, no account is needed, and the original video is never modified.")
 
             if let url = AppInfo.repositoryURL {
-                HStack(spacing: Spacing.tight) {
+                VStack(alignment: .leading, spacing: Spacing.hair) {
                     Text("Full details are in the README:")
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Link("github.com/tfiish/storystamper", destination: url)
                 }
                 .font(.appRegular)

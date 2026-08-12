@@ -513,17 +513,36 @@ Each is one line or a few, low risk, no design decision required.
 
 ## 19. Anything I Could Not Reliably Evaluate
 
-Per [AGENTS.md](AGENTS.md), I did not run, screenshot, or drive the app. These need your eyes — each is a specific place to look, not a general request:
+**This is the remaining blocker on 2.0.0, and the only section that cannot be closed from source.** Per [AGENTS.md](AGENTS.md), no agent may run, screenshot, or drive the app — the owner does every visual pass. Each item below is a specific place to look and a specific question, not a general request to "check the UI".
 
-1. **Sheet title weight.** `.appTitle` (16) in About/Settings against `.appRegularBold` (13) in Export/Failure — do they read as the same level of heading? Your answer decides M1.
-2. **Safe-area guide contrast.** `Opacity.wash` (0.25 black) over bright footage — are the zones legible without obscuring the frame?
-3. **`.tertiary` version label** in the left footer — still readable in both Light and Dark? It is the app's only `.tertiary`.
-4. **Drop-prompt rhythm** (V4) — do the four elements at uniform `Spacing.large` read as a group, or does the title/subtitle pair want to be tighter?
-5. **`GlyphPicker` captions at the 260 pt sidebar floor** — commit `7fa8c9c` addressed clipping and the uncommitted `PROBE` suggests it is still under investigation. Worth confirming *"Monospace"* and *"System"* fit at minimum width.
-6. **Hover-label placement near pane edges** — `HoverLabel` defaults to `.top` with a `.bottom` escape hatch, but only [SourceSidebarView.swift:53](Sources/StoryStamper/Views/SourceSidebarView.swift:53)'s filename row sits near a top edge and it does not pass `.bottom`.
-7. **The X button over light footage** — `Opacity.scrim` backing with a white glyph; fine over dark video, unverified over bright.
-8. **VoiceOver in practice** — my findings are structural. Actual rotor navigation and announcement order need a real session.
-9. **Light/Dark rendering** — no `colorScheme` conditionals exist anywhere, so both modes rest entirely on system semantic colors. That is the right approach; whether every surface lands well in both is unverified.
+**How to work this list:** build and install (`./Scripts/make-app.sh --install`), then take these one at a time, in order — the checks are grouped so a single sitting covers each group. Record the answer inline as **CONFIRMED** or the change it prompted, and delete the item. When the list is empty and every other section is closed, delete this file and cut 2.0.0.
+
+Current as of **1.9.1**.
+
+### Group A — changed in 1.9.0/1.9.1 and never seen
+
+These are new. They are the most likely to be wrong, because they were written and shipped without anyone looking at them.
+
+1. **Does the style sidebar scroll while greyed out?** The 1.9.1 fix. Load nothing, shrink the window until the right panel overflows, and try to scroll it. Structurally correct, visually unverified — this was reported as feeling broken, so it is the first thing to confirm.
+2. **`Add Block` / `Remove Block` at the 260 pt sidebar floor.** Two buttons side by side in an `HStack`; drag the splitter to its narrowest and check neither wraps or clips. `Remove Block` carries `role: .destructive`.
+3. **The Text Style section now ends on the Color row.** Its trailing helper line was deleted in 1.9.1 — does the section bottom read as finished, or as truncated?
+4. **The padding hint reads `Instagram native padding: 20`.** The number is a button, underlined and tinted. Check the colon-space-number spacing looks deliberate rather than like a missing word.
+5. **Sheet title weight.** All four sheet titles are now uniformly `.appTitle` (16 pt), which made **Export Complete** and the failure heading 3 pt *larger* than in 1.8.x. If that reads too heavy for a status sheet, it is one line in [`SheetChrome.swift`](Sources/StoryStamper/Views/Components/SheetChrome.swift). *This is a decision made on your behalf — it needs your yes or no.*
+6. **The splitter's focus halo.** New in 1.9.0. Tab to the divider between the preview and the style sidebar: the halo is drawn around a 1 pt divider rather than a solid control, which is the one place `focusHalo` is used on something with no body of its own. Then check the arrow keys resize it.
+
+### Group B — pre-existing, still unverified
+
+7. **Safe-area guide contrast.** `Opacity.wash` (0.25 black) over bright footage — are the zones legible without obscuring the frame?
+8. **The X button over light footage.** `Opacity.scrim` backing with a white glyph; fine over dark video, unverified over bright.
+9. **`.tertiary` version label** in the left footer — readable in both Light and Dark? It is the app's only `.tertiary`, and that is deliberate (see the ramp note in DEVELOPING.md), not drift.
+10. **Drop-prompt rhythm** (V4) — the four elements sit at a uniform `Spacing.large`. Does the title/subtitle pair want to be tighter than the gap to the button?
+11. **`GlyphPicker` captions at minimum sidebar width.** Rewritten in 1.8.3 to center on the selected segment with a clamp. Confirm *"Monospace"* and *"System"* neither clip nor sit visibly off-center at 260 pt.
+12. **Hover-label placement near pane edges.** `HoverLabel` defaults to `.top` with a `.bottom` escape hatch. The filename row in the left sidebar sits near the top of its pane and does not pass `.bottom` — does its label get clipped?
+
+### Group C — needs a real assistive-technology session
+
+13. **VoiceOver end to end.** Structural findings only so far. Worth a real session now that 1.9.0 added announcements: check rotor navigation order, that the export progress reads its percentage and estimate, that completion and failure are actually announced, and that the splitter is reachable and adjustable.
+14. **Light and Dark.** No `colorScheme` conditionals exist anywhere — both modes rest entirely on system semantics, which is the right approach. Whether every surface lands well in both is unverified, and the Theme picker makes it a fast pass.
 
 ---
 
