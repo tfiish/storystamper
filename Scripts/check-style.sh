@@ -23,8 +23,8 @@
 #      values by definition; declaring one locally is how the second copy of a
 #      number starts.
 #
-# And across all of Sources, the two house rules AGENTS.md and DEVELOPING.md
-# state but nothing used to check:
+# And across all of Sources, the two house rules DEVELOPING.md states but
+# nothing used to check:
 #   5. A force unwrap. Errors surface as readable messages, so there is no
 #      case for crashing on a nil. Implicitly unwrapped optionals in a type
 #      position are exempt: the ObjC bridge writes `Selector!` for us.
@@ -214,7 +214,7 @@ for my $file (@ARGV) {
 
 if ($violations) {
     my $plural = $violations == 1 ? "line" : "lines";
-    print "\ncheck-style: $violations $plural break a house rule. See AGENTS.md.\n";
+    print "\ncheck-style: $violations $plural break a house rule. See DEVELOPING.md.\n";
     exit 1;
 }
 ' $(find Sources -name "*.swift" | sort)
