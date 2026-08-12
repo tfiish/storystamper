@@ -1,12 +1,18 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The left pane: drop zone, video preview with draggable overlay, safe-area
+/// The left pane: drop zone, video preview with draggable overlays, safe-area
 /// guides, and transport controls.
 struct VideoPreviewView: View {
     @Bindable var project: StoryProject
     @State private var isDropTargeted = false
     @State private var dragStartCenter: CGPoint?
+    @State private var snappedToCenterX = false
+    @State private var snappedToCenterY = false
+
+    /// How close, in preview points, a drag must come to a midline before it
+    /// snaps. Measured on screen so the feel is the same at any window size.
+    private let snapDistance: CGFloat = 9
 
     var body: some View {
         VStack(spacing: 0) {
@@ -75,6 +81,14 @@ struct VideoPreviewView: View {
                             overlayView(overlay, blockIndex: index, video: video, videoRect: videoRect)
                         }
                     }
+
+                    CenterGuides(
+                        videoRect: videoRect,
+                        showVertical: snappedToCenterX,
+                        showHorizontal: snappedToCenterY
+                    )
+
+                    clearButton(videoRect: videoRect)
                 }
             }
         }
@@ -94,6 +108,22 @@ struct VideoPreviewView: View {
             width: size.width,
             height: size.height
         )
+    }
+
+    private func clearButton(videoRect: CGRect) -> some View {
+        Button {
+            project.clearVideo()
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.white)
+                .frame(width: 24, height: 24)
+                .background(Circle().fill(Color.black.opacity(0.55)))
+                .overlay(Circle().strokeBorder(Color.white.opacity(0.25), lineWidth: 1))
+        }
+        .buttonStyle(.plain)
+        .help("Close this video and choose another")
+        .position(x: videoRect.maxX - 20, y: videoRect.minY + 20)
     }
 
     private func overlayView(_ overlay: RenderedOverlay, blockIndex: Int, video: VideoInfo, videoRect: CGRect) -> some View {
@@ -132,11 +162,22 @@ struct VideoPreviewView: View {
                             dragStartCenter = center
                             project.selectedIndex = blockIndex
                         }
-                        guard let start = dragStartCenter else { return }
-                        let proposed = CGPoint(
+                        guard let start = dragStartCenter, videoRect.width > 0, videoRect.height > 0 else { return }
+
+                        var proposed = CGPoint(
                             x: start.x + value.translation.width / videoRect.width,
                             y: start.y + value.translation.height / videoRect.height
                         )
+
+                        // Snap each axis independently to the midline, using a
+                        // threshold expressed in screen points.
+                        let snapX = abs(proposed.x - 0.5) * videoRect.width < snapDistance
+                        let snapY = abs(proposed.y - 0.5) * videoRect.height < snapDistance
+                        if snapX { proposed.x = 0.5 }
+                        if snapY { proposed.y = 0.5 }
+                        if snapX != snappedToCenterX { snappedToCenterX = snapX }
+                        if snapY != snappedToCenterY { snappedToCenterY = snapY }
+
                         project.blocks[blockIndex].center = OverlayRenderer.clampedCenter(
                             proposed,
                             blockSize: overlay.pixelSize,
@@ -145,6 +186,8 @@ struct VideoPreviewView: View {
                     }
                     .onEnded { _ in
                         dragStartCenter = nil
+                        snappedToCenterX = false
+                        snappedToCenterY = false
                     }
             )
     }
@@ -188,7 +231,37 @@ func chooseVideo(for project: StoryProject) {
     }
 }
 
-// MARK: - Safe-area guides
+// MARK: - Alignment guides
+
+/// Midlines that appear only while a drag is snapped to them.
+private struct CenterGuides: View {
+    let videoRect: CGRect
+    let showVertical: Bool
+    let showHorizontal: Bool
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if showVertical {
+                line(width: 1, height: videoRect.height)
+                    .offset(x: videoRect.midX, y: videoRect.minY)
+            }
+            if showHorizontal {
+                line(width: videoRect.width, height: 1)
+                    .offset(x: videoRect.minX, y: videoRect.midY)
+            }
+        }
+        .allowsHitTesting(false)
+        .animation(.easeOut(duration: 0.1), value: showVertical)
+        .animation(.easeOut(duration: 0.1), value: showHorizontal)
+    }
+
+    private func line(width: CGFloat, height: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color.accentColor)
+            .frame(width: width, height: height)
+            .shadow(color: .black.opacity(0.5), radius: 1)
+    }
+}
 
 /// Approximate zones where Instagram's own UI covers a Story. Visual guide
 /// only—never part of the export.

@@ -2,6 +2,14 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.2.0 — 2026-08-11
+
+- **Export is dramatically faster.** It now uses Apple's hardware H.264 encoder when available, falling back to libx264 otherwise. A 38-second 4K clip went from over ten minutes to about twenty seconds. Audio is copied rather than re-encoded when the source is already AAC.
+- **The progress bar actually works.** FFmpeg's progress stream was being read through an async byte sequence that buffered it into one late lump; it is now read live, so the bar advances continuously and shows an estimated time remaining.
+- **Text size no longer shrinks on high-resolution footage.** Sizes are authored against a 1080-wide frame and scaled to the source, so the same setting looks right on both 1080p and 4K.
+- Dragging a text block now snaps to the horizontal and vertical midlines, showing a guide line while snapped.
+- Added an X button on the video to unload it and return to the drop screen, keeping your text and styling for the next clip.
+
 ## 1.1.1 — 2026-08-11
 
 - Added a generated app icon, drawn by `Scripts/make-icon.swift` at build time.

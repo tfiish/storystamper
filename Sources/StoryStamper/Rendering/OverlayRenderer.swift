@@ -23,6 +23,10 @@ struct PlacedOverlay: Sendable {
 enum OverlayRenderer {
     /// The text block may occupy at most this fraction of the video width.
     static let maxWidthFraction: CGFloat = 0.92
+    /// Style sizes are authored against a 1080-wide Story frame and scaled to
+    /// the real video, so "size 72" looks the same on 1080p and 4K footage
+    /// instead of rendering half as large on the latter.
+    static let referenceNarrowSide: CGFloat = 1080
     /// Extra transparent margin around the text so glyphs never clip at the
     /// bitmap edge; visually part of the padding.
     private static let bleed: CGFloat = 6
@@ -33,6 +37,7 @@ enum OverlayRenderer {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, videoSize.width > 0, videoSize.height > 0 else { return nil }
 
+        let style = scaled(style, for: videoSize)
         let attributed = attributedString(text: text, style: style)
         let inset = contentInset(for: style)
         let maxTextWidth = max(videoSize.width * maxWidthFraction - 2 * inset, style.fontSize)
@@ -156,6 +161,16 @@ enum OverlayRenderer {
     }
 
     // MARK: - Private helpers
+
+    /// Converts authored sizes into pixels for this video's resolution.
+    private static func scaled(_ style: OverlayStyle, for videoSize: CGSize) -> OverlayStyle {
+        let factor = min(videoSize.width, videoSize.height) / referenceNarrowSide
+        guard factor > 0, factor != 1 else { return style }
+        var result = style
+        result.fontSize = style.fontSize * factor
+        result.padding = style.padding * factor
+        return result
+    }
 
     private static func contentInset(for style: OverlayStyle) -> CGFloat {
         style.backgroundMode == .none ? bleed : style.padding + bleed

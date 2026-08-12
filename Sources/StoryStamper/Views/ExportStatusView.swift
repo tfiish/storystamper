@@ -3,6 +3,10 @@ import SwiftUI
 /// Sheet shown while an export runs, and after it finishes or fails.
 struct ExportStatusView: View {
     @Bindable var project: StoryProject
+    /// Ticks once a second purely so the remaining-time estimate stays fresh
+    /// between FFmpeg's progress updates.
+    @State private var now = Date()
+    private let clock = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     var body: some View {
         VStack(spacing: 16) {
@@ -13,11 +17,18 @@ struct ExportStatusView: View {
             case .exporting(let progress):
                 Text("Exporting Story Video")
                     .font(.headline)
+
                 ProgressView(value: progress)
-                    .frame(width: 260)
-                Text("\(Int(progress * 100))%")
+                    .progressViewStyle(.linear)
+                    .frame(width: 280)
+                    // FFmpeg reports about twice a second; interpolating
+                    // between updates keeps the bar from stepping.
+                    .animation(.linear(duration: 0.6), value: progress)
+
+                Text(statusLine(progress: progress))
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
+
                 Button("Cancel") {
                     project.cancelExport()
                 }
@@ -58,5 +69,29 @@ struct ExportStatusView: View {
         }
         .padding(28)
         .frame(minWidth: 340)
+        .onReceive(clock) { now = $0 }
+    }
+
+    /// Percentage plus a remaining-time estimate once there is enough data to
+    /// make one honest. The tail of an export is the container rewrite for
+    /// faststart, which reports no progress, so it gets its own label.
+    private func statusLine(progress: Double) -> String {
+        let percent = Int(progress * 100)
+        guard progress < 0.995 else { return "Finishing up…" }
+        guard let started = project.exportStartedAt, progress > 0.03 else {
+            return "\(percent)%"
+        }
+        let elapsed = now.timeIntervalSince(started)
+        guard elapsed > 1 else { return "\(percent)%" }
+        let remaining = elapsed / progress - elapsed
+        guard remaining.isFinite, remaining > 0 else { return "\(percent)%" }
+        return "\(percent)% — about \(formatted(remaining)) remaining"
+    }
+
+    private func formatted(_ seconds: Double) -> String {
+        if seconds < 10 { return "a few seconds" }
+        if seconds < 90 { return "\(Int((seconds / 5).rounded()) * 5) seconds" }
+        let minutes = Int((seconds / 60).rounded())
+        return minutes == 1 ? "a minute" : "\(minutes) minutes"
     }
 }

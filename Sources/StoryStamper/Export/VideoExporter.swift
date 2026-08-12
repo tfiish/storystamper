@@ -32,9 +32,16 @@ enum VideoExporter {
         let overlayURL = tempDirectory.appendingPathComponent("overlay.png")
         try OverlayRenderer.writePNG(canvas, to: overlayURL)
 
+        let useHardware = FFmpegService.supportsVideoToolbox(executable: ffmpeg)
         try await FFmpegService.run(
             executable: ffmpeg,
-            arguments: arguments(videoURL: videoInfo.url, overlayURL: overlayURL, outputURL: outputURL),
+            arguments: arguments(
+                videoURL: videoInfo.url,
+                overlayURL: overlayURL,
+                outputURL: outputURL,
+                useHardwareEncoder: useHardware,
+                copyAudio: videoInfo.audioIsAAC
+            ),
             durationSeconds: videoInfo.duration,
             onProgress: onProgress
         )
@@ -46,9 +53,15 @@ enum VideoExporter {
     /// upright, the source's display-matrix side data must be deleted—FFmpeg 7
     /// otherwise carries it into the output, and players would rotate the
     /// frame a second time. The crop filter is a no-op for even dimensions and
-    /// only exists so libx264 never rejects an odd size.
-    private static func arguments(videoURL: URL, overlayURL: URL, outputURL: URL) -> [String] {
-        [
+    /// only exists so the encoder never rejects an odd size.
+    private static func arguments(
+        videoURL: URL,
+        overlayURL: URL,
+        outputURL: URL,
+        useHardwareEncoder: Bool,
+        copyAudio: Bool
+    ) -> [String] {
+        var args = [
             "-y",
             "-nostdin",
             "-i", videoURL.path,
@@ -57,16 +70,25 @@ enum VideoExporter {
             "[0:v][1:v]overlay=0:0:format=auto,crop=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p,sidedata=mode=delete:type=DISPLAYMATRIX[v]",
             "-map", "[v]",
             "-map", "0:a?",
-            "-c:v", "libx264",
-            "-preset", "medium",
-            "-crf", "18",
-            "-c:a", "aac",
-            "-b:a", "192k",
+        ]
+
+        if useHardwareEncoder {
+            // Apple's media engine, ~30x faster than libx264 on 4K. q:v is a
+            // 0...100 constant-quality scale.
+            args += ["-c:v", "h264_videotoolbox", "-q:v", "65"]
+        } else {
+            args += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"]
+        }
+
+        args += copyAudio ? ["-c:a", "copy"] : ["-c:a", "aac", "-b:a", "192k"]
+
+        args += [
             "-movflags", "+faststart",
             "-progress", "pipe:1",
             "-nostats",
             "-loglevel", "error",
             outputURL.path,
         ]
+        return args
     }
 }

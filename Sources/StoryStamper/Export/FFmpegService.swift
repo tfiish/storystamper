@@ -30,6 +30,46 @@ private final class ProcessBox: @unchecked Sendable {
     init(_ process: Process) { self.process = process }
 }
 
+/// Splits pipe data into lines. Pipe handlers fire on a background queue, so
+/// the buffer is lock-protected.
+private final class LineAccumulator: @unchecked Sendable {
+    private let lock = NSLock()
+    private var buffer = Data()
+
+    func append(_ data: Data, onLine: (String) -> Void) {
+        lock.lock()
+        buffer.append(data)
+        var lines: [String] = []
+        while let newline = buffer.firstIndex(of: UInt8(ascii: "\n")) {
+            let slice = buffer[buffer.startIndex..<newline]
+            buffer.removeSubrange(buffer.startIndex...newline)
+            if let line = String(data: slice, encoding: .utf8) {
+                lines.append(line)
+            }
+        }
+        lock.unlock()
+        // Deliver outside the lock so callers can do real work.
+        for line in lines { onLine(line) }
+    }
+}
+
+private final class DataCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var data = Data()
+
+    func append(_ chunk: Data) {
+        lock.lock()
+        data.append(chunk)
+        lock.unlock()
+    }
+
+    var string: String {
+        lock.lock()
+        defer { lock.unlock() }
+        return String(data: data, encoding: .utf8) ?? ""
+    }
+}
+
 /// Locates and runs FFmpeg. All invocations pass argument arrays directly to
 /// Process—no shell is involved, so no escaping of user text is ever needed.
 enum FFmpegService {
@@ -51,9 +91,30 @@ enum FFmpegService {
         return nil
     }
 
+    /// Whether this FFmpeg build offers Apple's hardware H.264 encoder, which
+    /// is roughly thirty times faster than libx264 on 4K footage. Costs about
+    /// 30 ms to check, which is nothing next to an export.
+    static func supportsVideoToolbox(executable: URL) -> Bool {
+        let process = Process()
+        process.executableURL = executable
+        process.arguments = ["-hide_banner", "-encoders"]
+        let pipe = Pipe()
+        process.standardOutput = pipe
+        process.standardError = FileHandle.nullDevice
+        process.standardInput = FileHandle.nullDevice
+        do {
+            try process.run()
+        } catch {
+            return false
+        }
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        process.waitUntilExit()
+        return String(data: data, encoding: .utf8)?.contains("h264_videotoolbox") ?? false
+    }
+
     /// Runs FFmpeg, reporting progress as a 0...1 fraction parsed from the
-    /// machine-readable `-progress` stream. Cancelling the surrounding Task
-    /// terminates the process.
+    /// machine-readable `-progress` stream, which emits roughly twice a
+    /// second. Cancelling the surrounding Task terminates the process.
     static func run(
         executable: URL,
         arguments: [String],
@@ -70,41 +131,55 @@ enum FFmpegService {
         process.standardError = stderr
         process.standardInput = FileHandle.nullDevice
 
-        let box = ProcessBox(process)
-        try await withTaskCancellationHandler {
-            try process.run()
+        let accumulator = LineAccumulator()
+        let errorOutput = DataCollector()
 
-            // Collect stderr concurrently so a chatty process cannot deadlock
-            // on a full pipe buffer.
-            let stderrTask = Task.detached { () -> String in
-                var data = Data()
-                for try await byte in stderr.fileHandleForReading.bytes {
-                    data.append(byte)
-                }
-                return String(data: data, encoding: .utf8) ?? ""
-            }
-
-            // FFmpeg's -progress stream emits key=value lines; out_time_us is
-            // microseconds of output written so far.
-            for try await line in stdout.fileHandleForReading.bytes.lines {
-                guard let duration = durationSeconds, duration > 0 else { continue }
+        // readabilityHandler delivers data as FFmpeg writes it. (FileHandle's
+        // async `bytes` sequence buffers far too aggressively here, which is
+        // why progress used to arrive in one late lump.)
+        stdout.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else { return }
+            accumulator.append(chunk) { line in
+                guard let duration = durationSeconds, duration > 0 else { return }
+                // out_time_ms is misnamed upstream: both keys are microseconds.
                 for prefix in ["out_time_us=", "out_time_ms="] where line.hasPrefix(prefix) {
                     if let microseconds = Double(line.dropFirst(prefix.count)) {
                         onProgress(min(max(microseconds / 1_000_000 / duration, 0), 1))
                     }
                 }
             }
+        }
+        stderr.fileHandleForReading.readabilityHandler = { handle in
+            let chunk = handle.availableData
+            guard !chunk.isEmpty else { return }
+            errorOutput.append(chunk)
+        }
 
-            while process.isRunning {
-                try? await Task.sleep(nanoseconds: 50_000_000)
+        let box = ProcessBox(process)
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                process.terminationHandler = { _ in
+                    stdout.fileHandleForReading.readabilityHandler = nil
+                    stderr.fileHandleForReading.readabilityHandler = nil
+                    // Pick up anything buffered between the last handler call
+                    // and exit, so failures always carry their message.
+                    errorOutput.append(stderr.fileHandleForReading.readDataToEndOfFile())
+                    continuation.resume()
+                }
+                do {
+                    try process.run()
+                } catch {
+                    process.terminationHandler = nil
+                    continuation.resume(throwing: error)
+                }
             }
-            try Task.checkCancellation()
 
-            let errorOutput = (try? await stderrTask.value) ?? ""
+            try Task.checkCancellation()
             guard process.terminationStatus == 0 else {
                 throw ExportError.ffmpegFailed(
                     status: process.terminationStatus,
-                    detail: String(errorOutput.suffix(2000))
+                    detail: String(errorOutput.string.suffix(2000))
                 )
             }
         } onCancel: {

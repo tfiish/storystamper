@@ -69,6 +69,8 @@ final class StoryProject {
     // MARK: - Export
 
     var exportPhase: ExportPhase = .idle
+    /// When the current export began, used to estimate time remaining.
+    private(set) var exportStartedAt: Date?
     private var exportTask: Task<Void, Never>?
 
     private var timeObserver: Any?
@@ -180,6 +182,20 @@ final class StoryProject {
         allowedExtensions.contains(url.pathExtension.lowercased())
     }
 
+    /// Unloads the video and returns to the drop screen. Text blocks and their
+    /// styles survive, so the same stamp can be applied to the next video.
+    func clearVideo() {
+        pause()
+        player.replaceCurrentItem(with: nil)
+        if let endObserver {
+            NotificationCenter.default.removeObserver(endObserver)
+            self.endObserver = nil
+        }
+        video = nil
+        currentTime = 0
+        renderCache = [:]
+    }
+
     /// Loops playback at the end, matching how a Story behaves in Instagram.
     private func installLoopObserver() {
         if let endObserver {
@@ -276,6 +292,7 @@ final class StoryProject {
         guard panel.runModal() == .OK, let outputURL = panel.url else { return }
 
         exportPhase = .exporting(progress: 0)
+        exportStartedAt = Date()
         exportTask = Task {
             do {
                 try await VideoExporter.export(

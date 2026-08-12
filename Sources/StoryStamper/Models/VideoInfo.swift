@@ -1,4 +1,5 @@
 import AVFoundation
+import AudioToolbox
 import Foundation
 
 /// Metadata about a source video, probed once at load time.
@@ -10,6 +11,9 @@ struct VideoInfo: Sendable {
     let duration: Double
     let nominalFrameRate: Float
     let hasAudio: Bool
+    /// When true the audio can be remuxed into the MP4 untouched, which is
+    /// both faster and avoids a generation of re-encoding loss.
+    let audioIsAAC: Bool
 
     var filename: String { url.lastPathComponent }
 
@@ -50,12 +54,21 @@ struct VideoInfo: Sendable {
             throw ProbeError.unreadable("The video reports invalid dimensions.")
         }
 
+        var audioIsAAC = false
+        if let audioTrack = audioTracks.first,
+           let descriptions = try? await audioTrack.load(.formatDescriptions) {
+            audioIsAAC = descriptions.contains {
+                CMFormatDescriptionGetMediaSubType($0) == kAudioFormatMPEG4AAC
+            }
+        }
+
         return VideoInfo(
             url: url,
             displaySize: displaySize,
             duration: duration.seconds,
             nominalFrameRate: frameRate,
-            hasAudio: !audioTracks.isEmpty
+            hasAudio: !audioTracks.isEmpty,
+            audioIsAAC: audioIsAAC
         )
     }
 }
