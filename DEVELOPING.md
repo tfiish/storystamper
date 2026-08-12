@@ -156,17 +156,25 @@ For launch time, which the smoke test cannot cover, quit the app first and time 
 
 Bump `CFBundleShortVersionString` and `CFBundleVersion` in `Support/Info.plist`, and keep `AppInfo.developmentVersion` in step—the sidebar footer reads the bundle when installed and falls back to that constant under `swift run`. Add a `CHANGELOG.md` entry, then `./Scripts/make-app.sh --install`.
 
-Then tag it, and push the tag. GitHub's Releases page is built from tags, so a release that is only a commit does not appear there at all:
+Then tag it, and push the tag:
 
 ```bash
-git tag -a 2.0.0 -m "Story Stamper 2.0.0"
+git tag -a 2.1.3 -m "Story Stamper 2.1.3"
 ```
 
 ```bash
 git push origin main --follow-tags
 ```
 
-The tag name is the bare version, no `v` prefix, matching `CFBundleShortVersionString` exactly—one string for the plist, the changelog heading, and the tag, so there is nothing to reconcile later. Annotated (`-a`) rather than lightweight, so the tag carries its own date and author. **Every version from 2.0.0 on gets one**; the releases before it predate the repository being public and have no tags to backfill.
+The tag name is the bare version, no `v` prefix, matching `CFBundleShortVersionString` exactly—one string for the plist, the changelog heading, and the tag, so there is nothing to reconcile later. Annotated (`-a`) rather than lightweight, so the tag carries its own date and author.
+
+**The tag is not the release.** A tag puts the version under the repository's Tags tab and nowhere else; the Releases page lists published releases, which are a separate thing you have to create. Tagging alone leaves that page empty—which is exactly what happened between 2.0.0 and 2.1.2, when this section claimed otherwise. Publish the release from the changelog entry you just wrote:
+
+```bash
+gh release create 2.1.3 --title "Story Stamper 2.1.3" --notes "$(awk '/^## 2\.1\.3/{f=1;next} /^## /{f=0} f' CHANGELOG.md)"
+```
+
+Every version from 2.1.3 on gets both a tag and a release. 2.0.0 and 2.0.1 have tags but no release, and 2.0.2 through 2.1.2 have neither; the versions before 2.0.0 predate the repository being public. None of that is being backfilled—the changelog is the record for anything older, and a run of releases invented after the fact would only claim a history the repository does not have.
 
 ## Design system
 
