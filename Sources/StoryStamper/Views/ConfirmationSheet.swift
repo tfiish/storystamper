@@ -27,7 +27,7 @@ struct ConfirmationSheet: View {
             }
 
             Toggle("Don't ask me again", isOn: $suppressFuture)
-                .help("You can turn this warning back on in Settings.")
+                .hoverLabel("You can turn this warning back on in Settings.", edge: .bottom)
 
             HStack(spacing: Spacing.small) {
                 Spacer()

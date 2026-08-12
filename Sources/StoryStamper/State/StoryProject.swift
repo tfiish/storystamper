@@ -31,7 +31,9 @@ final class StoryProject {
 
     /// Index of the block the controls panel edits. Read through
     /// `safeSelectedIndex` so a stale value can never crash after removal.
-    var selectedIndex = 0
+    var selectedIndex = 0 {
+        didSet { persistSelectedStyle() }
+    }
 
     /// True while the story text field has keyboard focus, so the transport
     /// bar can give up the space bar rather than swallow it mid-sentence.
@@ -50,6 +52,10 @@ final class StoryProject {
             SettingsStore.save(appearance: appearance)
             appearance.apply()
         }
+    }
+
+    var exportResolution = SettingsStore.loadExportResolution() {
+        didSet { SettingsStore.save(exportResolution: exportResolution) }
     }
 
     /// Width of the style sidebar, dragged by the splitter beside it. Saved on
@@ -76,6 +82,9 @@ final class StoryProject {
     /// signature is a per-process hash, which is fine because it is only ever
     /// compared against another signature from the same run.
     private var renderCache: [UUID: CachedRender] = [:]
+    /// One in-flight render per block, so a burst of keystrokes or a slider
+    /// drag replaces its predecessor instead of queueing behind it.
+    private var renderTasks: [UUID: Task<Void, Never>] = [:]
     private var lastSavedStyle: OverlayStyle
 
     // MARK: - Export
@@ -172,61 +181,110 @@ final class StoryProject {
         )
     }
 
-    /// What persists between launches is the style of the block you last
-    /// *edited*, not block 1 and not whichever block is selected—changing the
-    /// selection does not touch `blocks`, so it does not reach this method. It
-    /// is worth knowing that with three differently styled blocks, the one
-    /// that survives a relaunch is the one you last touched a control for.
     private func handleBlocksChange() {
         refreshOverlays()
-        let style = selectedBlock.style
-        if style != lastSavedStyle {
-            SettingsStore.save(style)
-            lastSavedStyle = style
-        }
+        persistSelectedStyle()
     }
 
+    /// What carries to the next launch is the *selected* block's style, which
+    /// is a rule that can be stated in one sentence. Selection changes reach
+    /// this too, so switching blocks and quitting keeps what is on screen
+    /// rather than what was last typed into.
+    private func persistSelectedStyle() {
+        let style = selectedBlock.style
+        guard style != lastSavedStyle else { return }
+        SettingsStore.save(style)
+        lastSavedStyle = style
+    }
+
+    /// Rasterizing a block is proportional to the video's resolution—on 4K
+    /// footage it is a bitmap several thousand pixels wide—so it happens off
+    /// the main actor and after a short coalescing delay. Typing a caption and
+    /// dragging a slider are the two hottest paths in the app, and neither can
+    /// afford to block on drawing text.
     private func refreshOverlays() {
         guard let video else {
+            cancelRenders()
             renderCache = [:]
             return
         }
-        var newCache: [UUID: CachedRender] = [:]
-        for block in blocks {
-            var hasher = Hasher()
-            hasher.combine(block.text)
-            hasher.combine(block.style)
-            hasher.combine(video.displaySize.width)
-            hasher.combine(video.displaySize.height)
-            let signature = hasher.finalize()
 
+        let live = Set(blocks.map(\.id))
+        for (id, task) in renderTasks where !live.contains(id) {
+            task.cancel()
+            renderTasks[id] = nil
+        }
+
+        var kept: [UUID: CachedRender] = [:]
+        for block in blocks {
+            let signature = signature(for: block, videoSize: video.displaySize)
             if let cached = renderCache[block.id], cached.signature == signature {
-                newCache[block.id] = cached
-            } else {
-                newCache[block.id] = CachedRender(
-                    signature: signature,
-                    overlay: OverlayRenderer.renderBlock(text: block.text, style: block.style, videoSize: video.displaySize)
-                )
+                kept[block.id] = cached
+                continue
+            }
+            // Hold the previous bitmap while the new one is drawn, so the
+            // preview never blinks empty between keystrokes.
+            kept[block.id] = renderCache[block.id]
+            scheduleRender(block, signature: signature, videoSize: video.displaySize)
+        }
+        renderCache = kept
+    }
+
+    private func signature(for block: OverlayBlock, videoSize: CGSize) -> Int {
+        var hasher = Hasher()
+        hasher.combine(block.text)
+        hasher.combine(block.style)
+        hasher.combine(videoSize.width)
+        hasher.combine(videoSize.height)
+        return hasher.finalize()
+    }
+
+    private func scheduleRender(_ block: OverlayBlock, signature: Int, videoSize: CGSize) {
+        renderTasks[block.id]?.cancel()
+        let id = block.id
+        let text = block.text
+        let style = block.style
+        renderTasks[id] = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(Motion.renderCoalesce))
+            guard !Task.isCancelled else { return }
+            let overlay = await Task.detached(priority: .userInitiated) {
+                OverlayRenderer.renderBlock(text: text, style: style, videoSize: videoSize)
+            }.value
+            guard !Task.isCancelled else { return }
+            await MainActor.run {
+                guard let self, self.renderTasks[id] != nil else { return }
+                self.renderCache[id] = CachedRender(signature: signature, overlay: overlay)
+                self.renderTasks[id] = nil
             }
         }
-        renderCache = newCache
+    }
+
+    private func cancelRenders() {
+        renderTasks.values.forEach { $0.cancel() }
+        renderTasks = [:]
     }
 
     // MARK: - Destructive actions
 
-    /// Every path that throws away typed text goes through one of these two
-    /// requests, so the confirmation can never be bypassed by adding a caller.
+    /// Every path that discards a video or a block goes through one of these
+    /// two requests, so the confirmation cannot be bypassed by adding a caller.
+    ///
+    /// The setting is the only thing that decides whether to ask. An earlier
+    /// version also skipped the prompt when nothing had been typed yet, which
+    /// meant the X cleared a loaded video outright—not what a setting called
+    /// "Confirm before deletion" promises.
     func requestClearVideo() {
-        guard confirmDestructiveActions, hasStoryText else {
+        guard video != nil else { return }
+        guard confirmDestructiveActions else {
             clearVideo()
             return
         }
-        pendingConfirmation = ConfirmationRequest(action: .clearVideo)
+        pendingConfirmation = ConfirmationRequest(action: .clearVideo(hasText: hasStoryText))
     }
 
     func requestRemoveSelectedBlock() {
         guard blocks.count > 1 else { return }
-        guard confirmDestructiveActions, blocks[safeSelectedIndex].hasText else {
+        guard confirmDestructiveActions else {
             removeSelectedBlock()
             return
         }
@@ -310,6 +368,7 @@ final class StoryProject {
         }
         video = nil
         currentTime = 0
+        cancelRenders()
         // Setting `blocks` after `video` is already nil clears the render
         // cache through `handleBlocksChange`.
         blocks = [OverlayBlock(style: selectedBlock.style)]
@@ -361,15 +420,12 @@ final class StoryProject {
 
     // MARK: - Export
 
-    /// All non-empty blocks paired with their positions, in draw order.
-    var placedOverlays: [PlacedOverlay] {
-        blocks.compactMap { block in
-            overlay(for: block).map { PlacedOverlay(overlay: $0, center: block.center) }
-        }
-    }
-
+    /// Deliberately independent of the preview's render cache: whether there
+    /// is something to export is a fact about the text, not about whether a
+    /// bitmap has finished drawing. The exporter rasterizes its own overlay at
+    /// the output resolution anyway.
     var canExport: Bool {
-        video != nil && !placedOverlays.isEmpty && exportTask == nil
+        video != nil && hasStoryText && exportTask == nil
     }
 
     var isExporting: Bool {
@@ -379,9 +435,9 @@ final class StoryProject {
 
     /// Prompts for a destination, then runs the export off the main actor.
     func beginExport() {
-        guard let video else { return }
-        let overlays = placedOverlays
-        guard !overlays.isEmpty else { return }
+        guard let video, hasStoryText else { return }
+        let blocks = self.blocks
+        let resolution = exportResolution
         pause()
 
         let panel = NSSavePanel()
@@ -397,7 +453,8 @@ final class StoryProject {
             do {
                 try await VideoExporter.export(
                     videoInfo: video,
-                    overlays: overlays,
+                    blocks: blocks,
+                    resolution: resolution,
                     outputURL: outputURL
                 ) { progress in
                     Task { @MainActor [weak self] in

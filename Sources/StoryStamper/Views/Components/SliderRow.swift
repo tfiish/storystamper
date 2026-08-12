@@ -32,7 +32,7 @@ struct SliderRow: View {
             .accessibilityLabel(spokenName ?? title)
             .accessibilityValue(format(value))
         if let help {
-            base.help(help)
+            base.hoverLabel(help)
         } else {
             base
         }

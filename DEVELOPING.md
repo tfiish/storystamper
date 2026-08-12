@@ -108,16 +108,40 @@ Sources/StoryStamper/
 
 ## Invariants worth preserving
 
-- **Preview and export share pixels and math.** `OverlayRenderer.renderBlock` produces the one bitmap per block that both display and export use; `clampedCenter` and `blockRect` are the only placement math. Change placement behavior in one place and both stay in sync.
+- **Preview and export share code and math, not bitmaps.** Both go through `OverlayRenderer.renderBlock`, and `clampedCenter` and `blockRect` are the only placement math. The preview rasterizes at the source's resolution; the exporter rasterizes again at the *output* resolution, so text is drawn once at the size it will be seen at rather than drawn large and resampled. They still agree because style sizes are authored against a 1080-wide frame and scaled by the narrow side, and scaling preserves aspect—so a block occupies the same fraction of the frame at any resolution. Change that scaling rule and you break the match.
+- **Export never reads the preview's render cache.** `canExport` asks whether there is text, not whether a bitmap has finished drawing, and `VideoExporter` takes `[OverlayBlock]` and renders its own. This is what lets preview rendering be asynchronous without an export ever catching a stale or half-drawn overlay.
+- **Overlay rasterization happens off the main actor, coalesced.** Typing a caption and dragging a slider both invalidate the render, and on 4K footage a render is a bitmap thousands of pixels wide. `StoryProject.scheduleRender` keeps one in-flight task per block and holds the previous bitmap until the new one lands. Do not make this synchronous again.
+- **Scratch is never swept on the critical path.** Quitting renames the scratch root (`ExportScratch.discard`, constant time); the next launch deletes it in the background (`sweep`). A killed 4K export can leave gigabytes there, and deleting that at launch or quit is exactly the stall rule zero forbids.
 - **Overlay positions are normalized.** Each `OverlayBlock.center` is in 0...1 video coordinates. Never store window-pixel positions.
 - **Blocks are capped at three** (`StoryProject.maxBlocks`) and require a loaded video, and re-rendering is signature-cached per block—dragging never re-rasterizes text, only text, style, or video changes do.
 - **User text never touches a shell or a filter string.** FFmpeg receives an argument array via `Process`, and the text itself only exists rasterized inside a PNG. Keep it that way when touching export code.
 - **Rotation:** FFmpeg auto-rotates input before the filter graph, and the `sidedata=mode=delete:type=DISPLAYMATRIX` filter strips the stale rotation side data FFmpeg 7 would otherwise copy into the output. Removing that filter reintroduces a double-rotation bug on phone footage.
 - **Font size and padding are authored against a 1080-wide frame** and multiplied by `min(width, height) / 1080` in `OverlayRenderer.scaled(_:for:)`. Window size never affects them; video resolution scales them proportionally so a setting looks the same on 1080p and 4K.
+- **Exports default to the Story frame.** `ExportResolution.story` fits the narrow side to 1080 and never upscales. On the 4K fixture this is 40 MB in 16 s against 99 MB in 21 s, for a destination that serves 1080 × 1920 either way. `.source` remains available in Settings.
 - **Export prefers `h264_videotoolbox`.** `FFmpegService.supportsVideoToolbox` probes `ffmpeg -encoders` per export (about 30 ms) and `VideoExporter` falls back to libx264 `veryfast` when it is missing. On a 38-second 4K clip this is the difference between roughly 20 seconds and over ten minutes, so do not "simplify" it back to a single software encoder.
 - **Nothing is written to the user's chosen destination until the encode succeeds.** FFmpeg writes into `ExportScratch`, and `VideoExporter.install` moves the finished file into place. A cancel, a failure, or a quit therefore leaves no truncated MP4 behind. Do not "simplify" this by pointing FFmpeg at the destination.
 - **Destructive actions go through `requestClearVideo` and `requestRemoveSelectedBlock`.** Those are the only two paths that discard typed text, and they are where the confirmation lives. Calling `clearVideo` or `removeSelectedBlock` directly would bypass it, which is why both are private.
 - **Progress is read with `readabilityHandler`, not `FileHandle.bytes`.** The async byte sequence buffers so aggressively that progress arrived in one late lump; the handler-based reader delivers FFmpeg's twice-a-second updates live.
+
+## Measuring
+
+Rule zero asks for a measurement before any change that might cost speed. The smoke test times each phase, so the before-and-after is one command:
+
+```bash
+.build/debug/StoryStamper --smoke-export TestMedia/squeezy.MOV /tmp/out.mp4 | grep -v progress
+```
+
+```
+probe:    2160x3840, 38.48s, 30.0 fps, audio: aac, copied  [0.02s]
+output:   1080x1920  (Story (1080))
+render:   818x323 px  [0.07s]
+export:   [16.19s]
+SMOKE OK: /tmp/out.mp4  [total 16.27s]
+```
+
+Pass `--source-resolution` to compare against a full-resolution encode. Use a release build (`swift build -c release`) for any number you intend to quote; the debug build is not representative.
+
+For launch time, which the smoke test cannot cover, quit the app first and time a cold start by hand. Anything you can perceive is too slow.
 
 ## Releasing
 

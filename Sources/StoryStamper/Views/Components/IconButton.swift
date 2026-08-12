@@ -48,7 +48,7 @@ struct IconButton: View {
         .focused($focused)
         .focusEffectDisabled()
         .focusHalo(focused, shape: Circle())
-        .help(label)
+        .hoverLabel(label)
         .accessibilityLabel(label)
     }
 }

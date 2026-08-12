@@ -21,19 +21,37 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
     let name: (Value) -> String
     @ViewBuilder let glyph: (Value) -> Glyph
 
-    @State private var hoverTask: Task<Void, Never>?
-    @State private var hovered: Value?
-    @State private var named: Value?
     @FocusState private var focused: Bool
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: Spacing.tight) {
+        VStack(spacing: Spacing.tight) {
             segments
-            Text(name(selection))
-                .font(.appSmall)
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
+            caption
         }
+    }
+
+    /// Laid out as one cell per segment so the name sits centered under the
+    /// glyph it belongs to. The cells are placeholders and the text is drawn
+    /// as an overlay at its natural width, so a long name like "Monospaced"
+    /// stays on one line instead of being squeezed into a 30-point column.
+    private var caption: some View {
+        HStack(spacing: BorderWidth.hairline) {
+            ForEach(items, id: \.self) { item in
+                Color.clear
+                    .frame(maxWidth: .infinity)
+                    .overlay {
+                        if item == selection {
+                            Text(name(item))
+                                .font(.appSmall)
+                                .foregroundStyle(.secondary)
+                                .fixedSize()
+                        }
+                    }
+            }
+        }
+        .padding(.horizontal, BorderWidth.emphasis)
+        .frame(height: Metrics.captionHeight)
+        .accessibilityHidden(true)
     }
 
     private var segments: some View {
@@ -54,7 +72,6 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
         .onKeyPress(keys: [.leftArrow, .rightArrow]) { press in
             move(by: press.key == .leftArrow ? -1 : 1)
         }
-        .overlay(alignment: .top) { hoverLabel }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
         .accessibilityValue(name(selection))
@@ -80,49 +97,8 @@ struct GlyphPicker<Value: Hashable, Glyph: View>: View {
             }
             .contentShape(Rectangle())
             .onTapGesture { selection = item }
-            .onHover { inside in hover(item, inside: inside) }
+            .hoverLabel(name(item))
             .accessibilityHidden(true)
-    }
-
-    /// The app's own tooltip. `.help()` would route through AppKit's tooltip
-    /// manager, whose delay is roughly a second and is not publicly settable.
-    @ViewBuilder
-    private var hoverLabel: some View {
-        if let named {
-            Text(name(named))
-                .font(.appSmall)
-                .padding(.horizontal, Spacing.small)
-                .padding(.vertical, Spacing.hair)
-                .background {
-                    RoundedRectangle(cornerRadius: Radius.small)
-                        .fill(.regularMaterial)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: Radius.small)
-                                .strokeBorder(Color.primary.opacity(Opacity.border), lineWidth: BorderWidth.hairline)
-                        }
-                }
-                .fixedSize()
-                .offset(y: -(Metrics.segmentHeight + Spacing.small))
-                .allowsHitTesting(false)
-                .transition(.opacity)
-        }
-    }
-
-    private func hover(_ item: Value, inside: Bool) {
-        hoverTask?.cancel()
-        guard inside else {
-            if hovered == item {
-                hovered = nil
-                withAnimation(.easeOut(duration: Motion.quick)) { named = nil }
-            }
-            return
-        }
-        hovered = item
-        hoverTask = Task {
-            try? await Task.sleep(for: .seconds(Motion.tooltipDelay))
-            guard !Task.isCancelled, hovered == item else { return }
-            withAnimation(.easeOut(duration: Motion.quick)) { named = item }
-        }
     }
 
     private func move(by offset: Int) -> KeyPress.Result {

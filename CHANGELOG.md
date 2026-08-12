@@ -2,6 +2,21 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 1.8.0 — 2026-08-12
+
+- **Fixed: the X cleared a loaded video without asking**, even with Confirm before deletion switched on, whenever nothing had been typed yet. The setting now decides on its own whether to ask, which is what its description always promised.
+- **Exports are sized to the Story frame by default.** Instagram serves Stories at 1080 × 1920, so re-encoding a 4K clip at 4K spent the time and the upload on pixels the destination discards. On the 4K test clip that is 40 MB in 16 seconds instead of 99 MB in 21. Sources at or below 1080 are never enlarged, and Settings can switch back to matching the source. Text is now rasterized at the output size rather than drawn large and resampled, so it is sharper as well.
+- **Typing and dragging no longer wait on drawing.** Rasterizing a text block is proportional to the video's resolution, and it was happening on the main thread on every keystroke and every slider frame. It now runs off the main actor, coalesced, holding the previous image until the new one is ready.
+- **Quitting and launching no longer wait on the file system.** Quitting renames the scratch directory instead of deleting it; the next launch clears it in the background. A killed 4K export could otherwise have left gigabytes to delete before the window appeared.
+- One tooltip everywhere. Every named control now draws the app's own hover label after a quarter second, instead of some controls being fast and the rest waiting on the system's unsettable delay.
+- The name under each Font, Alignment, and Theme picker is centered beneath the button it describes.
+- Remove Text Block moved off Command-Delete, which is delete-to-beginning-of-line in any text field and was stealing the key while you typed. It is now Command-Shift-Delete, and Area Guides moved off Command-G, which is Find Next everywhere else, to Command-Shift-A.
+- The Block picker no longer appears when the second block does, which used to shift every control below it.
+- The right sidebar's hint reads "Load a video to enable these controls", since it now describes the whole panel.
+- What carries between launches is the selected block's styling, a rule that can be stated in one sentence. It used to be whichever block you last edited.
+- The minimum window is taller, so the style sidebar does not scroll at its smallest size.
+- The smoke test times each phase, and DEVELOPING.md documents how to measure a change before and after.
+
 ## 1.7.0 — 2026-08-12
 
 - **A menu bar.** Every action the app can perform now has a menu item: Open and Replace Video (Command-O), Export Video (Command-E), Add and Remove Text Block, Select Block 1 through 3, Play and Pause, Unload Video, Area Guides (Command-G), and Theme. About in the app menu opens the app's own About box rather than the system panel, and Settings is where macOS expects it at Command-comma.

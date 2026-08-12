@@ -1,8 +1,9 @@
 import CoreGraphics
 import Foundation
 
-/// Orchestrates an export: renders the full-resolution overlay PNG, invokes
-/// FFmpeg to composite and re-encode, and cleans up temporary files.
+/// Orchestrates an export: renders the overlay at the output resolution,
+/// invokes FFmpeg to scale, composite, and re-encode, and cleans up after
+/// itself.
 ///
 /// FFmpeg encodes into the scratch directory, never straight to the
 /// destination. The finished file is moved into place only after FFmpeg exits
@@ -12,7 +13,8 @@ import Foundation
 enum VideoExporter {
     static func export(
         videoInfo: VideoInfo,
-        overlays: [PlacedOverlay],
+        blocks: [OverlayBlock],
+        resolution: ExportResolution,
         outputURL: URL,
         onProgress: @escaping @Sendable (Double) -> Void
     ) async throws {
@@ -23,9 +25,23 @@ enum VideoExporter {
             throw ExportError.ffmpegNotFound
         }
 
+        // Rendered at the output resolution rather than the source's, so text
+        // is rasterized once at the size it will actually be shown at instead
+        // of being drawn large and then scaled down with the video. Style
+        // sizes are authored against a 1080-wide frame and scaled by the
+        // narrow side, and scaling preserves aspect, so the text occupies the
+        // same fraction of the frame either way—the preview still matches.
+        let outputSize = resolution.outputSize(for: videoInfo.displaySize)
+        let overlays = blocks.compactMap { block -> PlacedOverlay? in
+            OverlayRenderer
+                .renderBlock(text: block.text, style: block.style, videoSize: outputSize)
+                .map { PlacedOverlay(overlay: $0, center: block.center) }
+        }
+        guard !overlays.isEmpty else { throw ExportError.nothingToStamp }
+
         guard let canvas = OverlayRenderer.renderFullCanvas(
             overlays: overlays,
-            videoSize: videoInfo.displaySize
+            videoSize: outputSize
         ) else {
             throw ExportError.overlayRenderFailed
         }
@@ -44,6 +60,7 @@ enum VideoExporter {
                 videoURL: videoInfo.url,
                 overlayURL: overlayURL,
                 outputURL: stagedURL,
+                scaleTo: outputSize == videoInfo.displaySize ? nil : outputSize,
                 useHardwareEncoder: useHardware,
                 hasAudio: videoInfo.hasAudio,
                 copyAudio: videoInfo.audioIsAAC
@@ -79,21 +96,34 @@ enum VideoExporter {
     /// otherwise carries it into the output, and players would rotate the
     /// frame a second time. The crop filter is a no-op for even dimensions and
     /// only exists so the encoder never rejects an odd size.
+    ///
+    /// Scaling, when asked for, happens before the overlay so the text is
+    /// composited at its final size and never resampled.
     private static func arguments(
         videoURL: URL,
         overlayURL: URL,
         outputURL: URL,
+        scaleTo: CGSize?,
         useHardwareEncoder: Bool,
         hasAudio: Bool,
         copyAudio: Bool
     ) -> [String] {
+        let source: String
+        if let scaleTo {
+            source = "[0:v]scale=\(Int(scaleTo.width)):\(Int(scaleTo.height)):flags=lanczos[bg];[bg]"
+        } else {
+            source = "[0:v]"
+        }
+        let filter = source
+            + "[1:v]overlay=0:0:format=auto,crop=trunc(iw/2)*2:trunc(ih/2)*2,"
+            + "format=yuv420p,sidedata=mode=delete:type=DISPLAYMATRIX[v]"
+
         var args = [
             "-y",
             "-nostdin",
             "-i", videoURL.path,
             "-i", overlayURL.path,
-            "-filter_complex",
-            "[0:v][1:v]overlay=0:0:format=auto,crop=trunc(iw/2)*2:trunc(ih/2)*2,format=yuv420p,sidedata=mode=delete:type=DISPLAYMATRIX[v]",
+            "-filter_complex", filter,
             "-map", "[v]",
         ]
 

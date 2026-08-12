@@ -9,6 +9,7 @@ enum SettingsStore {
     private static let confirmDestructiveKey = "confirmDestructive.v1"
     private static let appearanceKey = "appearance.v1"
     private static let styleSidebarWidthKey = "styleSidebarWidth.v1"
+    private static let exportResolutionKey = "exportResolution.v1"
 
     static func loadStyle() -> OverlayStyle {
         guard let data = UserDefaults.standard.data(forKey: styleKey),
@@ -63,5 +64,18 @@ enum SettingsStore {
 
     static func save(styleSidebarWidth: CGFloat) {
         UserDefaults.standard.set(Double(styleSidebarWidth), forKey: styleSidebarWidthKey)
+    }
+
+    /// Defaults to the Story frame: it is what Instagram serves, and a 4K
+    /// re-encode costs minutes and hundreds of megabytes for pixels the
+    /// destination discards.
+    static func loadExportResolution() -> ExportResolution {
+        guard let raw = UserDefaults.standard.string(forKey: exportResolutionKey),
+              let choice = ExportResolution(rawValue: raw) else { return .story }
+        return choice
+    }
+
+    static func save(exportResolution: ExportResolution) {
+        UserDefaults.standard.set(exportResolution.rawValue, forKey: exportResolutionKey)
     }
 }

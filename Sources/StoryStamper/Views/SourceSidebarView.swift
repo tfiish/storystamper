@@ -50,7 +50,7 @@ struct SourceSidebarView: View {
                     Text(video.filename)
                         .truncationMode(.middle)
                         .lineLimit(1)
-                        .help(video.url.path)
+                        .hoverLabel(video.url.path)
                     Text(summary(for: video))
                         .font(.appSmall)
                         .foregroundStyle(.secondary)

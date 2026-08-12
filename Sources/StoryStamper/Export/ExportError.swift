@@ -8,6 +8,7 @@ enum ExportError: LocalizedError {
     case ffmpegFailed(status: Int32, detail: String)
     case wouldOverwriteSource
     case couldNotSaveOutput(String)
+    case nothingToStamp
 
     var errorDescription: String? {
         switch self {
@@ -22,6 +23,8 @@ enum ExportError: LocalizedError {
                 : "FFmpeg exited with status \(status): \(trimmed)"
         case .wouldOverwriteSource:
             return "The export destination matches the source video. Choose a different location."
+        case .nothingToStamp:
+            return "There is no story text to stamp onto the video."
         case .couldNotSaveOutput(let detail):
             return "The video encoded, but could not be saved to that location: \(detail)"
         }

@@ -37,10 +37,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        // Sweep anything a previous run left behind after a crash or a force
-        // quit, before this run starts writing into the same place.
-        ExportScratch.removeAll()
         StoryProject.shared.appearance.apply()
+        // Debris from a previous crash or force quit can be gigabytes, so it
+        // is cleared off the main thread. Nothing here waits on it, and a new
+        // export creates its own session directory regardless.
+        Task.detached(priority: .utility) {
+            ExportScratch.sweep()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -79,7 +82,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        ExportScratch.removeAll()
+        // A rename, not a delete: quitting must not wait on the file system.
+        // The next launch clears what this leaves behind.
+        ExportScratch.discard()
     }
 
     private func confirm(title: String, message: String, confirmTitle: String) -> Bool {

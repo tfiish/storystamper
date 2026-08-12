@@ -37,15 +37,17 @@ struct StyleSidebarView: View {
 
     private var textSection: some View {
         Section("Story Text") {
-            if project.blocks.count > 1 {
-                Picker("Block", selection: $project.selectedIndex) {
-                    ForEach(Array(project.blocks.enumerated()), id: \.element.id) { index, _ in
-                        Text("Block \(index + 1)").tag(index)
-                    }
+            // Always present, even at one block: it used to appear when the
+            // second block did, shifting every control below it. Disabled
+            // controls that stay put beat controls that move.
+            Picker("Block", selection: $project.selectedIndex) {
+                ForEach(Array(project.blocks.enumerated()), id: \.element.id) { index, _ in
+                    Text("Block \(index + 1)").tag(index)
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
             }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .disabled(project.blocks.count < 2)
 
             TextEditor(text: $project.selectedBlock.text)
                 .font(.appRegular)
@@ -174,7 +176,7 @@ struct StyleSidebarView: View {
             .focused($paddingHintFocused)
             .focusEffectDisabled()
             .focusHalo(paddingHintFocused, shape: RoundedRectangle(cornerRadius: Radius.small))
-            .help("Set padding to \(Int(Self.instagramPadding))")
+            .hoverLabel("Set padding to \(Int(Self.instagramPadding))")
             .accessibilityLabel("Set padding to \(Int(Self.instagramPadding))")
             Text(".")
         }
@@ -196,8 +198,8 @@ struct StyleSidebarView: View {
                 .disabled(!project.canExport)
 
                 if project.video == nil {
-                    footerHint("Load a video to export.")
-                } else if project.placedOverlays.isEmpty {
+                    footerHint("Load a video to enable these controls.")
+                } else if !project.hasStoryText {
                     footerHint("Enter story text to export.")
                 }
             }

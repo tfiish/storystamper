@@ -66,7 +66,7 @@ The app icon is generated from [Scripts/make-icon.swift](Scripts/make-icon.swift
 4. Drag any text block where you want it on the preview, or select it and use the arrow keys—Shift-arrow moves farther. Dragging near the horizontal or vertical midline snaps to it, and a guide line appears to show the snap.
 5. Click the X in the top-right corner of the video to unload it and start over. It asks first if you have typed anything, the story text clears, and your styling carries over to the next clip.
 6. Optionally turn on Area Guides, which approximate where Instagram's UI covers the top and bottom of a Story (they never appear in the export), and set Theme to System, Light, or Dark.
-7. Click Export Video, choose a destination, and wait for the progress bar. The default filename appends `-story` so the source is never overwritten. Nothing is written to that destination until the encode finishes, so a cancelled or failed export leaves no half-written file behind.
+7. Click Export Video, choose a destination, and wait for the progress bar. The default filename appends `-story` so the source is never overwritten. Nothing is written to that destination until the encode finishes, so a cancelled or failed export leaves no half-written file behind. Exports are sized to a 1080-wide Story frame by default, which is what Instagram serves; Settings can switch that to match the source instead.
 
 Presentation settings (font, size, colors, background, padding, and alignment) persist between launches, as do your appearance choice, the width of the style sidebar, and whether destructive actions ask first. The text itself intentionally does not.
 
@@ -97,7 +97,6 @@ Rotation is handled carefully: FFmpeg auto-rotates phone footage upright before 
 - Export requires an FFmpeg installation unless one is bundled into the app.
 - The safe-area guides are reasonable approximations of Instagram's UI, not exact measurements.
 - Output is 8-bit SDR H.264, so HDR sources lose their HDR grade.
-- Export re-encodes at the source resolution, so 4K footage produces a 4K file. Instagram only needs 1080×1920, so those exports are larger and slower than strictly necessary.
 - The `.app` bundle is ad-hoc signed rather than notarized, so a build copied to another Mac needs right-click → Open the first time. Building it yourself avoids this entirely.
 - The app is not sandboxed, because it launches FFmpeg and reads and writes files you pick anywhere on disk.
 

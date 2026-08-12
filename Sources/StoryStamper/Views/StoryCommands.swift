@@ -40,8 +40,11 @@ struct StoryCommands: Commands {
                 .keyboardShortcut("n", modifiers: [.command, .shift])
                 .disabled(!project.canAddBlock)
 
+            // Not Command-Delete: that is delete-to-beginning-of-line in any
+            // text view, and a menu key equivalent beats the responder chain,
+            // so it would eat the shortcut while you were typing a caption.
             Button("Remove Text Block") { project.requestRemoveSelectedBlock() }
-                .keyboardShortcut(.delete, modifiers: .command)
+                .keyboardShortcut(.delete, modifiers: [.command, .shift])
                 .disabled(project.blocks.count < 2)
 
             Divider()
@@ -66,8 +69,9 @@ struct StoryCommands: Commands {
         }
 
         CommandGroup(after: .sidebar) {
+            // Not Command-G, which is Find Next everywhere else on the system.
             Toggle("Area Guides", isOn: $project.showSafeArea)
-                .keyboardShortcut("g", modifiers: .command)
+                .keyboardShortcut("a", modifiers: [.command, .shift])
 
             Picker("Theme", selection: $project.appearance) {
                 ForEach(AppearanceChoice.allCases) { choice in

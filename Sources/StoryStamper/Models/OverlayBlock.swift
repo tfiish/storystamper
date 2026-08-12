@@ -2,7 +2,7 @@ import Foundation
 
 /// One text overlay: its content, its style, and its center in normalized
 /// (0...1) video coordinates.
-struct OverlayBlock: Identifiable, Equatable {
+struct OverlayBlock: Identifiable, Equatable, Sendable {
     let id: UUID
     var text: String
     var style: OverlayStyle

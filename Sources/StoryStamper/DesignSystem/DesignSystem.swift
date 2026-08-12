@@ -73,6 +73,9 @@ enum FocusHalo {
 /// Named alpha values. The app draws over video, where a handful of washes and
 /// hairlines do all the work; naming them stops four near-identical numbers
 /// from accumulating for the same visual job.
+///
+/// These are independent by design. Where two happen to hold the same number
+/// today that is a coincidence, not a duplication—do not collapse them.
 enum Opacity {
     /// Dark backing behind a control, or a drop shadow, over video.
     static let scrim: Double = 0.5
@@ -96,7 +99,11 @@ enum Opacity {
 enum Motion {
     /// Guides appearing and disappearing: fast enough to feel instant.
     static let quick: Double = 0.1
-    /// How long the pointer must rest on a glyph before its name appears.
+    /// How long a burst of edits is gathered before the overlay is redrawn.
+    /// Short enough to feel live while typing; long enough that dragging a
+    /// slider at 60 Hz does not queue a full-resolution raster per frame.
+    static let renderCoalesce: Double = 0.05
+    /// How long the pointer must rest on a control before its name appears.
     /// Well under the system tooltip delay, which is not publicly settable—
     /// which is the whole reason these controls draw their own.
     static let tooltipDelay: Double = 0.25
@@ -160,7 +167,7 @@ enum Metrics {
     /// fixed rows and the pinned footer around it. Naming the two separately
     /// means raising the editor's minimum raises the window's too, rather
     /// than silently introducing the scroll 1.3.0 set out to remove.
-    static let styleSidebarChromeHeight: CGFloat = 540
+    static let styleSidebarChromeHeight: CGFloat = 570
     static let minWindowHeight: CGFloat = textEditorMinHeight + styleSidebarChromeHeight
     static let defaultWindowWidth: CGFloat = 1240
     static let defaultWindowHeight: CGFloat = 820
@@ -174,6 +181,9 @@ enum Metrics {
     static let overlayButton: CGFloat = 24
     /// One segment of a glyph picker, matching a small segmented control.
     static let segmentHeight: CGFloat = 22
+    /// The line under a glyph picker naming the current choice. Fixed, so the
+    /// row does not change height as the name changes.
+    static let captionHeight: CGFloat = 14
     static let textEditorMinHeight: CGFloat = 100
 
     static let sheetMinWidth: CGFloat = 340

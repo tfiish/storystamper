@@ -26,7 +26,7 @@ struct ColorRow: View {
             .labelsHidden()
             // macOS's color panel has no OK button—it applies as you pick—so
             // say that rather than leave people hunting for one.
-            .help("Custom color. Changes apply as you pick; close the panel when you are done.")
+            .hoverLabel("Changes apply as you pick; close the panel when you are done.")
         }
     }
 }
@@ -64,7 +64,7 @@ private struct SwatchButton: View {
         .focused($focused)
         .focusEffectDisabled()
         .focusHalo(focused, shape: Circle())
-        .help(preset.name)
+        .hoverLabel(preset.name)
         .accessibilityLabel(preset.name)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
