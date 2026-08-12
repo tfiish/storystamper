@@ -182,8 +182,9 @@ final class StoryProject {
         allowedExtensions.contains(url.pathExtension.lowercased())
     }
 
-    /// Unloads the video and returns to the drop screen. Text blocks and their
-    /// styles survive, so the same stamp can be applied to the next video.
+    /// Unloads the video and returns to the drop screen, clearing the story
+    /// text back to a single empty block. Styling carries over, since those
+    /// settings are meant to persist.
     func clearVideo() {
         pause()
         player.replaceCurrentItem(with: nil)
@@ -193,6 +194,8 @@ final class StoryProject {
         }
         video = nil
         currentTime = 0
+        blocks = [OverlayBlock(style: selectedBlock.style)]
+        selectedIndex = 0
         renderCache = [:]
     }
 

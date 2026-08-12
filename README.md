@@ -56,7 +56,7 @@ The app icon is generated from [Scripts/make-icon.swift](Scripts/make-icon.swift
 2. Type into Story Text—the overlay updates live, preserving your line breaks and wrapping long lines automatically. Click Add Second Block for a second, independently styled overlay; the controls always edit the selected block, and a dashed ring marks the selection when two blocks exist.
 3. Adjust font, size, alignment, color, background, and padding in the right-hand panel.
 4. Drag either text block anywhere on the preview, or use the Top, Center, and Bottom quick-position buttons. Dragging near the horizontal or vertical midline snaps to it, and a guide line appears to show the snap.
-5. Click the X in the top-right corner of the video to swap in a different one. Your text and styling stay put, so you can stamp the same thing onto a batch of clips.
+5. Click the X in the top-right corner of the video to unload it and start over. The story text clears, while your styling carries over to the next clip.
 6. Optionally toggle the Story safe-area guides, which approximate where Instagram's UI covers a Story (they never appear in the export).
 7. Click Export Story Video, choose a destination, and wait for the progress bar. The default filename appends `-story` so the source is never overwritten.
 

@@ -8,7 +8,7 @@ Purpose of this document: a human-readable record of user-visible changes per ve
 - **The progress bar actually works.** FFmpeg's progress stream was being read through an async byte sequence that buffered it into one late lump; it is now read live, so the bar advances continuously and shows an estimated time remaining.
 - **Text size no longer shrinks on high-resolution footage.** Sizes are authored against a 1080-wide frame and scaled to the source, so the same setting looks right on both 1080p and 4K.
 - Dragging a text block now snaps to the horizontal and vertical midlines, showing a guide line while snapped.
-- Added an X button on the video to unload it and return to the drop screen, keeping your text and styling for the next clip.
+- Added an X button on the video to unload it and return to the drop screen. It clears the story text back to a single empty block while keeping your styling.
 
 ## 1.1.1 — 2026-08-11
 
