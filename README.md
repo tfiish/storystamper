@@ -24,10 +24,10 @@ The one external program involved is FFmpeg, which runs locally on your machine 
 brew install ffmpeg
 ```
 
-**Then clone and build.** Replace the URL with this repository's address:
+**Then clone and build:**
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/storystamper.git
+git clone https://github.com/tfiish/storystamper.git
 ```
 
 ```bash
@@ -86,3 +86,9 @@ Rotation is handled carefully: FFmpeg auto-rotates phone footage upright before 
 ## Project layout
 
 See [DEVELOPING.md](DEVELOPING.md) for the file-by-file map, the headless smoke test, and release notes in [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+Public domain, via [The Unlicense](LICENSE). Copy it, change it, sell it, ship it—no attribution required, no conditions attached.
+
+Note that FFmpeg is a separate project under its own license (LGPL or GPL, depending on the build). Nothing changes if you install it with Homebrew as described above, since it stays a separate program on your machine. If you ever bundle an `ffmpeg` binary inside the app and distribute that, FFmpeg's license terms apply to the copy you ship.
