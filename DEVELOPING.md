@@ -174,6 +174,8 @@ The tag name is the bare version, no `v` prefix, matching `CFBundleShortVersionS
 gh release create 2.1.3 --title "Story Stamper 2.1.3" --notes "$(awk '/^## 2\.1\.3/{f=1;next} /^## /{f=0} f' CHANGELOG.md)"
 ```
 
+`make-app.sh --install` prints these two commands whenever the installed version has no matching tag, so the reminder arrives at the moment you need it rather than living only here. It warns and does not fail, unlike `check-style.sh`: installing a build mid-development is not a release.
+
 Every version from 2.1.3 on gets both a tag and a release. 2.0.0 and 2.0.1 have tags but no release, and 2.0.2 through 2.1.2 have neither; the versions before 2.0.0 predate the repository being public. None of that is being backfilled—the changelog is the record for anything older, and a run of releases invented after the fact would only claim a history the repository does not have.
 
 ## Design system

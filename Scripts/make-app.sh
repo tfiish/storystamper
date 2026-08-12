@@ -48,4 +48,28 @@ if [ "$INSTALL" = true ]; then
     /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
         -f "$DESTINATION" > /dev/null 2>&1 || true
     echo "Installed $DESTINATION"
+
+    # Every version from 2.0.2 to 2.1.2 shipped without a tag, because the tag
+    # is the one release step with nothing to remind you of it. This is the
+    # moment to say so: the version is bumped, the build is installed, and the
+    # commands below are the rest of the release.
+    #
+    # A warning, not a failure, unlike check-style.sh—installing a build during
+    # ordinary development is not a release, and blocking it would be wrong.
+    VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' Support/Info.plist)"
+    if git rev-parse --git-dir > /dev/null 2>&1 &&
+       ! git rev-parse -q --verify "refs/tags/$VERSION" > /dev/null; then
+        # Dots are regex wildcards, and 2.1.3 would otherwise also match 2913.
+        VERSION_RE="${VERSION//./\\.}"
+        cat <<NOTICE
+
+$VERSION is not tagged. If this build is the release, the tag and the
+release are both still to do—the tag alone puts nothing on the Releases
+page, which is how the versions above went missing:
+
+    git tag -a $VERSION -m "Story Stamper $VERSION"
+    git push origin main --follow-tags
+    gh release create $VERSION --title "Story Stamper $VERSION" --notes "\$(awk '/^## $VERSION_RE/{f=1;next} /^## /{f=0} f' CHANGELOG.md)"
+NOTICE
+    fi
 fi
