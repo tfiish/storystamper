@@ -174,6 +174,9 @@ private struct ColorRow: View {
                 supportsOpacity: false
             )
             .labelsHidden()
+            // macOS's color panel has no OK button—it applies as you pick—so
+            // say that rather than leave people hunting for one.
+            .help("Custom color. Changes apply as you pick; close the panel when you are done.")
         }
     }
 }

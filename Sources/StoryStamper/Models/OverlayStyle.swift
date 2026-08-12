@@ -142,11 +142,12 @@ struct OverlayStyle: Codable, Hashable, Sendable {
 enum ColorPreset {
     static let black = RGBAColor(red: 0, green: 0, blue: 0, alpha: 1)
     static let white = RGBAColor(red: 1, green: 1, blue: 1, alpha: 1)
-    static let blue = RGBAColor(red: 10 / 255, green: 132 / 255, blue: 255 / 255, alpha: 1)
-    static let gray = RGBAColor(red: 142 / 255, green: 142 / 255, blue: 147 / 255, alpha: 1)
+    /// The two grays sit at even thirds between black and white (0x55, 0xAA).
+    static let darkGray = RGBAColor(red: 1 / 3, green: 1 / 3, blue: 1 / 3, alpha: 1)
+    static let lightGray = RGBAColor(red: 2 / 3, green: 2 / 3, blue: 2 / 3, alpha: 1)
 
     static let background: [(name: String, color: RGBAColor)] = [
-        ("Black", black), ("Blue", blue), ("Gray", gray), ("White", white),
+        ("Black", black), ("Dark Gray", darkGray), ("Light Gray", lightGray), ("White", white),
     ]
     static let text: [(name: String, color: RGBAColor)] = [
         ("White", white), ("Black", black),
