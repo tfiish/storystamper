@@ -29,14 +29,32 @@ struct ExportStatusView: View {
                     Button("Reveal in Finder") {
                         project.revealExportInFinder()
                     }
-                    Button("Done") {
-                        project.finishExport()
+                    ForEach(closingActions) { action in
+                        Button(action.displayName) {
+                            close(with: action)
+                        }
+                        .keyboardShortcut(action == project.exportCompletionAction ? .defaultAction : nil)
                     }
-                    .keyboardShortcut(.defaultAction)
                 }
             }
         }
         .sheetChrome()
+    }
+
+    /// Done and Clear Video, with whichever one Return presses last. The
+    /// default button sits at the trailing end of every Mac sheet, so the two
+    /// trade places when the setting changes rather than parking the blue one
+    /// in the middle.
+    private var closingActions: [ExportCompletionAction] {
+        let preferred = project.exportCompletionAction
+        return ExportCompletionAction.allCases.filter { $0 != preferred } + [preferred]
+    }
+
+    private func close(with action: ExportCompletionAction) {
+        switch action {
+        case .done: project.finishExport()
+        case .clearVideo: project.finishExportAndClearVideo()
+        }
     }
 }
 

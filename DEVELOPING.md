@@ -72,6 +72,7 @@ Sources/StoryStamper/
 │   ├── AppearanceChoice.swift   System, light, or dark, applied to NSApp
 │   ├── ExportPhase.swift        Where an export is in its lifecycle
 │   ├── ExportResolution.swift   Story frame or original quality, and the math
+│   ├── ExportCompletionAction.swift  Done or Clear Video: what Return presses
 │   ├── StoryFailure.swift       Anything that went wrong, in one shape
 │   └── InfoSheet.swift          Which of About or Settings is showing
 ├── State/

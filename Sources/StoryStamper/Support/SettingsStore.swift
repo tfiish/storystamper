@@ -9,6 +9,7 @@ enum SettingsStore {
     private static let appearanceKey = "appearance.v1"
     private static let styleSidebarWidthKey = "styleSidebarWidth.v1"
     private static let exportResolutionKey = "exportResolution.v1"
+    private static let exportCompletionActionKey = "exportCompletionAction.v1"
 
     static func loadStyle() -> OverlayStyle {
         guard let data = UserDefaults.standard.data(forKey: styleKey),
@@ -66,5 +67,16 @@ enum SettingsStore {
 
     static func save(exportResolution: ExportResolution) {
         UserDefaults.standard.set(exportResolution.rawValue, forKey: exportResolutionKey)
+    }
+
+    /// Defaults to Done, which leaves the clip loaded for another pass.
+    static func loadExportCompletionAction() -> ExportCompletionAction {
+        guard let raw = UserDefaults.standard.string(forKey: exportCompletionActionKey),
+              let choice = ExportCompletionAction(rawValue: raw) else { return .done }
+        return choice
+    }
+
+    static func save(exportCompletionAction: ExportCompletionAction) {
+        UserDefaults.standard.set(exportCompletionAction.rawValue, forKey: exportCompletionActionKey)
     }
 }

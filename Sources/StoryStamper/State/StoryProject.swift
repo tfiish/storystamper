@@ -63,6 +63,10 @@ final class StoryProject {
         didSet { SettingsStore.save(exportResolution: exportResolution) }
     }
 
+    var exportCompletionAction = SettingsStore.loadExportCompletionAction() {
+        didSet { SettingsStore.save(exportCompletionAction: exportCompletionAction) }
+    }
+
     /// Width of the style sidebar, dragged by the splitter beside it. Saved on
     /// drag end rather than on every frame.
     var styleSidebarWidth = SettingsStore.loadStyleSidebarWidth()
@@ -665,6 +669,15 @@ final class StoryProject {
 
     func finishExport() {
         exportPhase = .idle
+    }
+
+    /// Done, then Clear Video, as one click. The export is already on disk and
+    /// the original was never written to, so this discards only what is on
+    /// screen—and it goes through `requestClearVideo`, so Command-Z brings
+    /// the clip and its text back like any other clear.
+    func finishExportAndClearVideo() {
+        finishExport()
+        requestClearVideo()
     }
 
     func revealExportInFinder() {

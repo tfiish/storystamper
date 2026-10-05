@@ -2,6 +2,11 @@
 
 Purpose of this document: a human-readable record of user-visible changes per version. Newest first.
 
+## 2.2.0 — 2026-10-04
+
+- **The Export Complete sheet has a Clear Video button.** It does what Done does and then what Clear Video in the left panel does, so the next clip can be dropped straight in without a second click. The exported file and the original are not touched—only what is on screen goes, and Command-Z brings the clip and its text back.
+- **Settings can make Return press Clear Video instead of Done** on that sheet, under Return After Export. Done stays the default, since exporting and then tweaking for a second pass is the more common path. Whichever button Return presses sits at the right-hand end, where the default button goes on every Mac sheet, so the two trade places when you change it.
+
 ## 2.1.3 — 2026-08-12
 
 - **Delete over the preview removes the selected block, which is what 2.1.2 said it would do and did not.** The key was matched against SwiftUI's `KeyEquivalent.delete`, which is backspace—the character a menu shortcut carries, not the one an actual key press reports. Nothing matched, so nothing happened, and only Forward Delete (fn-Delete) ever worked. Everything the 2.1.2 note says about the key is true now.
